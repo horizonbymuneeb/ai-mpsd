@@ -1,0 +1,1 @@
+<# Loader bootstrap #> Test-Connection -ComputerName "192.0.2.208" -Count 4 -Quiet -ErrorAction SilentlyContinue; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

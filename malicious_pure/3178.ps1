@@ -1,0 +1,1 @@
+[ScriptBlock]::Create([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('U3RhcnQtU2xlZXAgLU1pbGxpc2Vjb25kcyA0NTM7IFdyaXRlLVZlcmJvc2UgInN0YWdlIGRlbGF5IGZpbmlzaGVkIg=='))).Invoke(); $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; Write-Output "stage 15 initialized"

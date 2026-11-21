@@ -1,0 +1,61 @@
+{
+  "seed": 20261121,
+  "generated_in_s": 6.4,
+  "malicious_pure": {
+    "label": "malicious_pure",
+    "n": 4202,
+    "chars_min": 92,
+    "chars_median": 662,
+    "chars_mean": 10833,
+    "chars_max": 2530782,
+    "families": {
+      "shellcode_loader": 790,
+      "addtype_loader": 897,
+      "domain_recon": 42,
+      "assembly_loader": 268,
+      "iex_downloadstring": 355,
+      "encoded_stager": 183,
+      "downloader_oneliner": 1026,
+      "network_recon": 86,
+      "structured_downloader": 315,
+      "registry_persistence": 82,
+      "wmi_lolbin": 49,
+      "http_exfil": 45,
+      "scheduled_task": 64
+    }
+  },
+  "powershell_benign_dataset": {
+    "label": "powershell_benign_dataset",
+    "n": 4316,
+    "chars_min": 301,
+    "chars_median": 2540,
+    "chars_mean": 3387,
+    "chars_max": 7671,
+    "families": {
+      "winforms_tool": 207,
+      "service_monitor": 286,
+      "iis_log_parser": 253,
+      "backup_retention": 283,
+      "cloud_cost_report": 272,
+      "pester_tests": 271,
+      "ad_user_audit": 288,
+      "temp_cleanup": 326,
+      "installer_deploy": 259,
+      "cert_expiry_check": 287,
+      "module_export": 277,
+      "csv_report_exporter": 278,
+      "file_organiser": 244,
+      "api_client_retry": 255,
+      "azure_provision_test": 261,
+      "config_generator": 269
+    }
+  },
+  "mixed_malicious": {
+    "label": "mixed_malicious",
+    "n": 4202,
+    "chars_min": 521,
+    "chars_median": 4389,
+    "chars_mean": 14220,
+    "chars_max": 2533435
+  }
+}

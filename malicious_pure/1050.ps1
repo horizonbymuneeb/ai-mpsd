@@ -1,0 +1,2 @@
+powershell.exe -NoProfile -EncodedCommand VwByAGkAdABlAC0AVgBlAHIAYgBvAHMAZQAgACIAZQBuAGMAbwBkAGUAZAAgAHMAdABhAGcAZQAgAGMAbwBtAHAAbABlAHQAZQAiAA==
+$ProgressPreference = "SilentlyContinue"

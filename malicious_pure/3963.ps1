@@ -1,0 +1,1 @@
+$EncodedCommand = 'IwAgAGwAZQBnAGEAYwB5ACAAQQBNAFMASQAgAG0AYQByAGsAZQByACAAawBlAHAAdAAgAGYAbwByACAAcwBpAGcAbgBhAHQAdQByAGUAIABjAG8AdgBlAHIAYQBnAGUA'; $StageText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($EncodedCommand)); Invoke-Expression $StageText; $Host.UI.RawUI.WindowTitle = "Windows Update"; $StageMarker = "stage-42"

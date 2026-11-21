@@ -1,0 +1,251 @@
+
+<#
+.SYNOPSIS
+    Native shim loader with staged buffer preparation.
+
+.DESCRIPTION
+    Builds a C# helper from an embedded source block, calls two
+    harmless kernel32 exports, prepares an in-memory byte buffer
+    and writes a compact diagnostic report.
+
+.NOTES
+    The buffer is populated at runtime.
+#>
+[CmdletBinding()]
+param(
+    [string]$TracePath = "$env:TEMP\stage.log",
+    [int]$TimeoutSec = 112
+)
+$ErrorActionPreference = "Stop"
+
+$NativeCode = @'
+using System;
+using System.Runtime.InteropServices;
+
+public static class NativeApi
+{
+    [DllImport("kernel32.dll")]
+    public static extern uint GetTickCount();
+
+    [DllImport("kernel32.dll")]
+    public static extern uint GetCurrentProcessId();
+}
+'@
+Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+# Diagnostics
+function Write-StageLog {
+    [CmdletBinding()]
+    param(
+        [string]$Message = ''
+    )
+
+    Write-Verbose $Message
+    Add-Content -Path $TracePath -Value ("[" + (Get-Date -Format "HH:mm:ss") + "] " + $Message)
+}
+
+# Timestamp helper
+function Get-NativeTimestamp {
+    $NativeValue = [NativeApi]::GetTickCount()
+    Write-Verbose ("Native call returned " + $NativeValue)
+    return $NativeValue
+}
+
+# Stage buffer
+function Initialize-StageBuffer {
+    param(
+        [int]$BufferSize = 256
+    )
+
+    $StageBuffer = New-Object byte[] $BufferSize
+    for ($Index = 0; $Index -lt $StageBuffer.Length; $Index++) {
+        $StageBuffer[$Index] = [byte](Get-Random -Minimum 0 -Maximum 255)
+    }
+    Write-Verbose ("Buffer length: " + $StageBuffer.Length)
+    return $StageBuffer
+}
+
+Write-StageLog -Message "Starting native shim stage"
+$FetchResult = Get-NativeTimestamp
+$StageBuffer = Initialize-StageBuffer -BufferSize 256
+Write-StageLog -Message ("Buffer bytes: " + $StageBuffer.Length)
+
+$NativeReport = [ordered]@{
+    Stage = "native"
+    Module = $NativeCode.Length
+    Result = $FetchResult
+    BufferBytes = $StageBuffer.Length
+}
+$NativeReport | ConvertTo-Json -Depth 3 | Out-File -FilePath $TracePath -Append
+Write-Verbose "Inspecting process list"
+Write-Verbose "Operation completed"
+Write-Verbose "Collecting host metadata"
+Write-Verbose "Retry budget remaining"
+Write-Verbose "Resolving configured target"
+Write-Verbose "Writing diagnostic marker"
+Set-Location -Path $env:TEMP
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Parses IIS W3C logs and reports the busiest URLs and status codes.
+.PARAMETER LogRoot
+    Paths are resolved relative to the invoking session.
+.PARAMETER Days
+    Defaults to the value configured for this host.
+.EXAMPLE
+    .\Invoke-IisLogReport.ps1 -Days 14 -TopN 20
+.EXAMPLE
+    .\Invoke-IisLogReport.ps1 -LogRoot D:\Logs\iis\W3SVC2
+.NOTES
+    Author: M. Rahman
+    Last updated: 2025-11-11
+#>
+
+$LogRoot    = "D:\Logs\iis\W3SVC2"
+$Days       = 14
+$TopN       = 20
+$OutputPath = 'C:\Logs\reports\iis-top-2025-11-15.csv'
+$HtmlPath   = "C:\Reports\iis-2025-11-15.html"
+
+
+$cutoff = (Get-Date).AddDays(-$Days)
+$logFiles = Get-ChildItem -Path $LogRoot -Filter '*.log' -File |
+    Where-Object { $_.LastWriteTime -ge $cutoff }
+if (@($logFiles).Count -eq 0) {
+    throw ("No IIS logs found in {0} for the last {1} days" -f $LogRoot, $Days)
+}
+
+$entries = foreach ($log in $logFiles) {
+    $fieldLine = Get-Content -LiteralPath $log.FullName -TotalCount 20 |
+        Where-Object { $_ -match '^#Fields:' } | Select-Object -First 1
+    if (-not $fieldLine) {
+        Write-Verbose ("Skipping {0}: no field header" -f $log.Name)
+        continue
+    }
+    $columns = ($fieldLine -replace '^#Fields:\s*', '') -split ' '
+    $statusIndex = [array]::IndexOf($columns, 'sc-status')
+    $uriIndex = [array]::IndexOf($columns, 'cs-uri-stem')
+    $methodIndex = [array]::IndexOf($columns, 'cs-method')
+    $bytesIndex = [array]::IndexOf($columns, 'sc-bytes')
+    $timeIndex = [array]::IndexOf($columns, 'time-taken')
+    Get-Content -LiteralPath $log.FullName | Where-Object { $_ -notmatch '^#' } | ForEach-Object {
+        $parts = $_ -split ' '
+        if ($parts.Count -lt $columns.Count) {
+            return
+        }
+        [pscustomobject]@{
+            Date      = $parts[0]
+            Time      = $parts[1]
+            Method    = $parts[$methodIndex]
+            Uri       = $parts[$uriIndex]
+            Status    = [int]$parts[$statusIndex]
+            Bytes     = [int]$parts[$bytesIndex]
+            TimeTaken = [int]$parts[$timeIndex]
+        }
+    }
+}
+
+$totalRequests = @($entries).Count
+$errorEntries = $entries | Where-Object { $_.Status -ge 400 }
+$totalMB = [math]::Round((($entries | Measure-Object -Property Bytes -Sum).Sum) / 1MB, 2)
+$topUrls = $entries |
+    Group-Object -Property Uri |
+    Sort-Object -Property Count -Descending |
+    Select-Object -First $TopN -Property @{Name = 'Uri'; Expression = { $_.Name }}, Count
+$byStatus = $entries |
+    Group-Object -Property Status |
+    Sort-Object -Property Count -Descending |
+    Select-Object -Property @{Name = 'Status'; Expression = { $_.Name }}, Count
+
+$slowest = $entries | Sort-Object -Property TimeTaken -Descending |
+    Select-Object -First $TopN Uri, TimeTaken, Status
+
+$topUrls | Export-Csv -Path $OutputPath -NoTypeInformation
+
+$byStatus | Export-Csv -Path $OutputPath.Replace('.csv', '-status.csv') -NoTypeInformation -Encoding UTF8
+$slowest | Export-Csv -Path $OutputPath.Replace('.csv', '-slow.csv') -NoTypeInformation
+
+$byDay = $entries | Group-Object -Property Date | Sort-Object -Property Name |
+    ForEach-Object {
+        [pscustomobject]@{
+            Date     = $_.Name
+            Requests = $_.Count
+            Errors   = @($_.Group | Where-Object { $_.Status -ge 400 }).Count
+        }
+    }
+$byDay | Format-Table -AutoSize
+
+$notFound = $entries | Where-Object { $_.Status -eq 404 } |
+    Group-Object -Property Uri | Sort-Object -Property Count -Descending |
+    Select-Object -First $TopN -Property @{Name = 'Uri'; Expression = { $_.Name }}, Count
+$notFound | Export-Csv -Path $OutputPath.Replace('.csv', '-404.csv') -NoTypeInformation -Encoding UTF8
+
+$byHour = $entries | Group-Object -Property { ($_.Time -split ':')[0] } |
+    Sort-Object -Property Name
+$byHour | ForEach-Object {
+    Write-Verbose ("Hour {0}: {1} requests" -f $_.Name, $_.Count)
+}
+
+$style = @'
+<style>
+body { font-family: Arial; font-size: 13px; }
+table { border-collapse: collapse; width: 100%; }
+th { background: #e8eef7; text-align: left; padding: 4px; }
+td { border-bottom: 1px solid #dddddd; padding: 4px; }
+</style>
+'@
+
+$byDay | ConvertTo-Html -Title 'IIS traffic by day' -Head $style |
+    Set-Content -Path $HtmlPath -Encoding UTF8
+
+$MailTo = 'webops@contoso.com'
+$MailFrom = "iis-report@contoso.com"
+$summaryBody = $byStatus | ConvertTo-Html -Fragment | Out-String
+
+$mailParams = @{
+    To         = $MailTo
+    From       = $MailFrom
+    Subject    = 'IIS log summary'
+    Body       = $summaryBody
+    SmtpServer = "smtp.contoso.com"
+    Port       = 25
+    UseSsl     = $true
+}
+Send-MailMessage @mailParams
+foreach ($log in $logFiles) {
+    $sizeMB = [math]::Round($log.Length / 1MB, 2)
+    Write-Verbose ("{0}: {1} MB" -f $log.Name, $sizeMB)
+}
+Write-Host ("Top URL: {0} ({1} hits)" -f $topUrls[0].Uri, $topUrls[0].Count) -ForegroundColor Green
+Write-Verbose ("Log files processed: {0}" -f @($logFiles).Count)
+
+$compressed = @(Get-ChildItem -Path $LogRoot -Filter '*.log' -File |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) }).Count
+Write-Verbose ("Logs older than 30 days: {0}" -f $compressed)
+
+$byMethod = $entries | Group-Object -Property Method | Sort-Object -Property Count -Descending
+$byMethod | Format-Table Name, Count -AutoSize
+
+$medianTime = ($entries | Measure-Object -Property TimeTaken -Average).Average
+Write-Verbose ("Average time taken: {0:N1} ms" -f $medianTime)
+
+$bots = $entries | Where-Object { $_.Uri -match 'robots|sitemap' }
+Write-Verbose ("Crawler requests: {0}" -f @($bots).Count)
+
+$bigResponses = $entries | Sort-Object -Property Bytes -Descending | Select-Object -First 5
+$bigResponses | Format-Table Uri, Bytes, Status -AutoSize
+
+$errorRate = [math]::Round((@($errorEntries).Count / $totalRequests) * 100, 2)
+Write-Host ("Error rate: {0} percent" -f $errorRate) -ForegroundColor Yellow
+
+$psVersion = $PSVersionTable.PSVersion
+Write-Verbose ("PowerShell {0}.{1} on {2}" -f $psVersion.Major, $psVersion.Minor, $env:COMPUTERNAME)
+Write-Verbose ("Completed at {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
+
+$sessionLog = Join-Path $env:TEMP ("session-" + (Get-Date -Format 'yyyyMMdd') + ".log")
+Add-Content -Path $sessionLog -Value ("Run finished {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')) -Encoding UTF8
+
+$isElevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isElevated) {
+    Write-Warning 'Some checks require an elevated session.'
+}

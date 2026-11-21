@@ -1,0 +1,5 @@
+
+$NativeCode = "using System; using System.Runtime.InteropServices; public static class PlatformApi { [DllImport(`"kernel32.dll`")] public static extern uint GetCurrentProcessId(); }"
+Add-Type -TypeDefinition $NativeCode -Language CSharp
+$FetchResult = [PlatformApi]::GetCurrentProcessId()
+$PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

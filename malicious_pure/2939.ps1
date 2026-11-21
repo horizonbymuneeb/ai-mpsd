@@ -1,0 +1,1 @@
+$PayloadBytes = [Convert]::FromBase64String("c3RhZ2UyLW1hcmtlcjo1cXQ0dXZuM2Vs"); $TransferResult = [Reflection.Assembly]::Load($PayloadBytes); $TransferResult.GetTypes().Count; Write-Output "stage 42 initialized"

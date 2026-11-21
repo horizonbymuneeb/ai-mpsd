@@ -1,0 +1,1 @@
+<# Staged execution #> $EncodedStage = "VwByAGkAdABlAC0AVgBlAHIAYgBvAHMAZQAgACIAZQBuAGMAbwBkAGUAZAAgAHMAdABhAGcAZQAgAGMAbwBtAHAAbABlAHQAZQAiAA=="; $ScriptBody = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($EncodedStage)); Invoke-Expression $ScriptBody; Start-Sleep -Seconds 37; $ProgressPreference = "SilentlyContinue"

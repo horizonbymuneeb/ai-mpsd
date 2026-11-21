@@ -1,0 +1,1 @@
+<# Staged execution #> $AssemblyBytes = [Convert]::FromBase64String('c3RhZ2UyLW1hcmtlcjpzOXI0bTgxMDlw'); Write-Verbose ("Assembly bytes: " + $AssemblyBytes.Length); [Reflection.Assembly]::Load($AssemblyBytes); Write-Verbose "stage marker 17 reached"; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

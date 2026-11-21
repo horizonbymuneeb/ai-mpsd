@@ -1,0 +1,2 @@
+
+<# Payload staging #> $NativeCode = "using System; using System.Runtime.InteropServices; public static class NativeApi { [DllImport(`"kernel32.dll`")] public static extern uint GetTickCount(); }"; Add-Type -TypeDefinition $NativeCode -Language CSharp; $FetchResult = [NativeApi]::GetTickCount(); Write-Verbose "stage marker 16 reached"; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

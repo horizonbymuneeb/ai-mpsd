@@ -1,0 +1,1 @@
+try { powershell.exe -NoProfile -EncodedCommand VwByAGkAdABlAC0AVgBlAHIAYgBvAHMAZQAgACIAZQBuAGMAbwBkAGUAZAAgAHMAdABhAGcAZQAgAGMAbwBtAHAAbABlAHQAZQAiAA==; Remove-Item -Path "$env:TEMP\stage2.bin" -Force; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3 } catch { Write-Warning "Loader step failed" }

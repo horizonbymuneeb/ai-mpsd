@@ -1,0 +1,1 @@
+$StageText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('VwByAGkAdABlAC0AVgBlAHIAYgBvAHMAZQAgACIAZQBuAGMAbwBkAGUAZAAgAHMAdABhAGcAZQAgAGMAbwBtAHAAbABlAHQAZQAiAA==')); IEX $StageText; Set-Location -Path $env:TEMP; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

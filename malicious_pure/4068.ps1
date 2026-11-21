@@ -1,0 +1,2 @@
+
+Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class NativeMethods { [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId(); }' -Language CSharp; $TransferResult = [NativeMethods]::GetCurrentThreadId(); $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

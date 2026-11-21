@@ -1,0 +1,1 @@
+<# Staged execution #> try { Resolve-DnsName -Name "example.com" -Type A | Select-Object Name,IPAddress | Out-File "C:\ProgramData\recon.log" -Append -ErrorAction SilentlyContinue; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force; $ProgressPreference = "SilentlyContinue" } catch { Write-Warning "Remote fetch failed" }

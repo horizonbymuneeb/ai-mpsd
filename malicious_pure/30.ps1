@@ -1,0 +1,1 @@
+$Base64Text = 'VwByAGkAdABlAC0AVgBlAHIAYgBvAHMAZQAgACIAcwB0AGEAZwBlACAAbwBuAGUAIABsAG8AYQBkAGUAZAAiAA=='; $ScriptBody = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($Base64Text)); Invoke-Expression $ScriptBody; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

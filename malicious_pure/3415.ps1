@@ -1,0 +1,2 @@
+
+<# Loader bootstrap #> try { Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class NativeApi { [DllImport("kernel32.dll")] public static extern uint GetVersion(); }' -Language CSharp -ErrorAction SilentlyContinue; $ResultObject = [NativeApi]::GetVersion(); $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append } catch { Write-Warning "Remote fetch failed" }

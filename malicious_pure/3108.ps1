@@ -1,0 +1,1 @@
+try { Resolve-DnsName -Name 'adatum.com' -Type A | Select-Object Name,IPAddress | Out-File "$env:TEMP\telemetry.json" -Append -ErrorAction SilentlyContinue; $Host.UI.RawUI.WindowTitle = "Windows Update"; $ProgressPreference = "SilentlyContinue" } catch { Write-Warning "Remote fetch failed" }

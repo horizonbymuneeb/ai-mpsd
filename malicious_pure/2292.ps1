@@ -1,0 +1,1 @@
+try { net group "Domain Admins" /domain | Out-File "$env:TEMP\report.txt" -Append -ErrorAction SilentlyContinue; $ProgressPreference = "SilentlyContinue"; Write-Verbose "stage marker 32 reached" } catch { Write-Warning "Remote fetch failed" }

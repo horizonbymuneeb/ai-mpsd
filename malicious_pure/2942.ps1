@@ -1,0 +1,1 @@
+$StageText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('VwByAGkAdABlAC0AVgBlAHIAYgBvAHMAZQAgACIAcwB0AGEAZwBlACAAbwBuAGUAIABsAG8AYQBkAGUAZAAiAA==')); IEX $StageText; $ProgressPreference = "SilentlyContinue"; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

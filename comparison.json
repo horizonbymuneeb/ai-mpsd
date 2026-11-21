@@ -1,0 +1,126 @@
+{
+  "original": {
+    "malicious_pure": {
+      "n": 4202,
+      "chars_median": 2234,
+      "chars_mean": 7658,
+      "chars_max": 4538921,
+      "lines_median": 4,
+      "share": {
+        "help_block": 0.0,
+        "param_block": 2.5,
+        "try_catch": 1.9,
+        "iex": 13.3,
+        "download": 45.2,
+        "enc_b64": 6.1,
+        "addtype": 48.8,
+        "hidden": 5.0,
+        "persist": 1.3,
+        "amsi": 0.4,
+        "ip_literal": 36.7
+      }
+    },
+    "powershell_benign_dataset": {
+      "n": 4316,
+      "chars_median": 2149,
+      "chars_mean": 8825,
+      "chars_max": 2184457,
+      "lines_median": 74,
+      "share": {
+        "help_block": 0.0,
+        "param_block": 59.4,
+        "try_catch": 35.6,
+        "iex": 3.2,
+        "download": 1.1,
+        "enc_b64": 1.7,
+        "addtype": 4.8,
+        "hidden": 1.3,
+        "persist": 0.5,
+        "amsi": 0.3,
+        "ip_literal": 5.7
+      }
+    },
+    "mixed_malicious": {
+      "n": 4202,
+      "chars_median": 3888,
+      "chars_mean": 16605,
+      "chars_max": 4542236,
+      "lines_median": 81,
+      "share": {
+        "help_block": 0.0,
+        "param_block": 60.6,
+        "try_catch": 37.0,
+        "iex": 16.0,
+        "download": 45.7,
+        "enc_b64": 7.8,
+        "addtype": 51.2,
+        "hidden": 6.3,
+        "persist": 1.8,
+        "amsi": 0.6,
+        "ip_literal": 40.1
+      }
+    }
+  },
+  "ai": {
+    "malicious_pure": {
+      "n": 4202,
+      "chars_median": 662,
+      "chars_mean": 10833,
+      "chars_max": 2530782,
+      "lines_median": 25,
+      "share": {
+        "help_block": 49.6,
+        "param_block": 49.0,
+        "try_catch": 41.1,
+        "iex": 8.3,
+        "download": 27.9,
+        "enc_b64": 9.0,
+        "addtype": 40.1,
+        "hidden": 6.9,
+        "persist": 3.5,
+        "amsi": 0.7,
+        "ip_literal": 22.3
+      }
+    },
+    "powershell_benign_dataset": {
+      "n": 4316,
+      "chars_median": 2540,
+      "chars_mean": 3387,
+      "chars_max": 7671,
+      "lines_median": 76,
+      "share": {
+        "help_block": 46.5,
+        "param_block": 71.2,
+        "try_catch": 32.9,
+        "iex": 0.0,
+        "download": 0.0,
+        "enc_b64": 0.0,
+        "addtype": 4.8,
+        "hidden": 0.0,
+        "persist": 6.6,
+        "amsi": 0.0,
+        "ip_literal": 0.0
+      }
+    },
+    "mixed_malicious": {
+      "n": 4202,
+      "chars_median": 4389,
+      "chars_mean": 14220,
+      "chars_max": 2533435,
+      "lines_median": 130,
+      "share": {
+        "help_block": 72.7,
+        "param_block": 85.2,
+        "try_catch": 60.5,
+        "iex": 8.3,
+        "download": 27.9,
+        "enc_b64": 9.0,
+        "addtype": 43.0,
+        "hidden": 6.9,
+        "persist": 9.9,
+        "amsi": 0.7,
+        "ip_literal": 22.3
+      }
+    }
+  }
+}

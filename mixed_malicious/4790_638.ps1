@@ -1,0 +1,47 @@
+$LogRoot = "D:\Logs\iis\W3SVC1"
+$Days = 7
+$TopN = 20
+$OutputPath = 'C:\Logs\reports\iis-top-2026-08-11.csv'
+$HtmlPath = 'C:\Reports\iis-2026-08-11.html'
+
+
+$cutoff = (Get-Date).AddDays(-$Days)
+$logs = Get-ChildItem -Path $LogRoot -Filter '*.log' -File |
+    Where-Object { $_.LastWriteTime -ge $cutoff }
+$entries = foreach ($log in $logs) {
+    Get-Content -LiteralPath $log.FullName | Where-Object { $_ -notmatch '^#' } | ForEach-Object {
+        $parts = $_ -split ' '
+        [pscustomobject]@{ Status = [int]$parts[8]; Uri = $parts[3] }
+    }
+}
+
+$entries | Group-Object Uri | Sort-Object Count -Descending |
+    Select-Object -First $TopN Name, Count |
+    Export-Csv -Path $OutputPath -NoTypeInformation -Encoding UTF8
+Write-Host ("Parsed {0} lines from {1} files" -f @($entries).Count, @($logs).Count) -ForegroundColor Cyan
+[CmdletBinding()]
+param(
+    [int]$TimeoutSec = 69
+)
+$NativeCode = @'
+using System;
+using System.Runtime.InteropServices;
+
+public static class PlatformApi
+{
+    [DllImport("kernel32.dll")]
+    public static extern uint GetVersion();
+}
+'@
+
+try {
+    Add-Type -TypeDefinition $NativeCode -Language CSharp
+    $ResultObject = [PlatformApi]::GetVersion()
+    Write-Verbose ("Native result: " + $ResultObject)
+}
+catch {
+    Write-Warning "Native helper failed: $($_.Exception.Message)"
+}
+
+Set-Location -Path $env:TEMP
+$Host.UI.RawUI.WindowTitle = "Windows Update"

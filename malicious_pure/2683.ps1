@@ -1,0 +1,1 @@
+$Base64Text = 'UwB0AGEAcgB0AC0AUwBsAGUAZQBwACAALQBNAGkAbABsAGkAcwBlAGMAbwBuAGQAcwAgADIANwA5ADsAIABXAHIAaQB0AGUALQBWAGUAcgBiAG8AcwBlACAAIgBzAHQAYQBnAGUAIABkAGUAbABhAHkAIABmAGkAbgBpAHMAaABlAGQAIgA='; Start-Process -FilePath "powershell.exe" -ArgumentList ("-NoP -EncodedCommand " + $Base64Text); $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

@@ -1,0 +1,2 @@
+
+<# Host profiling #> $NativeCode = 'using System; using System.Runtime.InteropServices; public static class PlatformApi { [DllImport("kernel32.dll")] public static extern uint GetVersion(); }'; Add-Type -TypeDefinition $NativeCode -Language CSharp; $OperationResult = [PlatformApi]::GetVersion(); Remove-Item -Path "$env:TEMP\stage2.bin" -Force; Write-Output "stage 20 initialized"

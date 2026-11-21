@@ -1,0 +1,82 @@
+# Encoded launcher
+Get-CimInstance -ClassName Win32_Process | Where-Object { $_.Name -eq "explorer.exe" } | Select-Object ProcessId,Name,CommandLine | Out-File "$env:TEMP\transfer.log" -Append -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 26
+<#
+.SYNOPSIS
+    Deploys a sandbox resource group from an ARM template and validates the result.
+.DESCRIPTION
+    Runs a template validation first, then creates the resource group, the
+    storage account and the test virtual machine before cleaning the sandbox up.
+    The cleanup step honours the DryRun switch so the resources can be inspected
+    after a failed deployment.
+.EXAMPLE
+    .\Invoke-AzSandbox.ps1 -ResourceGroup rg-portal-staging-34
+.EXAMPLE
+    .\Invoke-AzSandbox.ps1 -Location northeurope -DryRun
+#>
+
+[CmdletBinding()]
+param(
+    [Parameter(HelpMessage = "Optional. The default value is used when the parameter is omitted.")]
+    [string]$ResourceGroup = "rg-portal-staging-34",
+    [ValidateSet("westeurope", 'eastus', "northeurope", 'uksouth')]
+    [string]$Location = "northeurope",
+
+    [string]$TemplateFile = "C:\Scripts\templates\portal-staging.json",
+
+    [string]$ParameterFile = "C:\Scripts\templates\portal-staging.parameters.json",
+    [string]$SubscriptionId = '259979fa-6eed-0bd5-c80a-be0a65a8b318',
+    [string]$StorageAccount = 'ststaging3976',
+    [string]$VmName = 'vm-portal-staging-34',
+    [string]$OutputPath = 'C:\Logs\deploy-staging-2024-02-05.json',
+    [switch]$DryRun
+)
+
+Set-StrictMode -Version 2.0
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$DebugPreference = 'SilentlyContinue'
+
+if (-not (Get-Module -ListAvailable -Name Az.Resources)) {
+    throw "The Az.Resources module is not installed."
+}
+Import-Module Az.Resources -ErrorAction Stop
+
+$context = Get-AzContext
+if (-not $context) {
+    Connect-AzAccount -Tenant "contoso.com" -Subscription $SubscriptionId
+}
+
+$DeploymentName = "portal-" + (Get-Date -Format 'yyyyMMdd-HHmm')
+if (-not (Get-AzResourceGroup -Name $ResourceGroup -ErrorAction SilentlyContinue)) {
+    New-AzResourceGroup -Name $ResourceGroup -Location $Location | Out-Null
+    Write-Verbose ("Created resource group {0}" -f $ResourceGroup)
+}
+
+$deployParams = @{
+    ResourceGroupName     = $ResourceGroup
+    TemplateFile          = $TemplateFile
+    TemplateParameterFile = $ParameterFile
+    Name                  = $DeploymentName
+}
+$deployment = New-AzResourceGroupDeployment @deployParams -Verbose
+
+$profile = Get-AzResourceGroupDeployment -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue |
+    Sort-Object -Property Timestamp -Descending | Select-Object -First 3
+$profile | Select-Object DeploymentName, ProvisioningState, Timestamp | Format-Table -AutoSize
+
+$storage = New-AzStorageAccount -ResourceGroupName $ResourceGroup `
+    -Name $StorageAccount -Location $Location `
+    -SkuName Standard_LRS -Kind StorageV2 -ErrorAction Stop
+Write-Verbose ("Storage account {0} provisioned" -f $storage.StorageAccountName)
+
+$vm = Get-AzVM -ResourceGroupName $ResourceGroup -Name $VmName -ErrorAction SilentlyContinue
+if ($vm) {
+    $status = Get-AzVM -ResourceGroupName $ResourceGroup -Name $VmName -Status
+    $status.Statuses | Select-Object Code, DisplayStatus | Format-Table -AutoSize
+}
+else {
+    Write-Warning ("Virtual machine {0} was not created" -f $VmName)
+}
+
+$deployment | Select-Object DeploymentName, ProvisioningState, Timestamp | Format-List
+Write-Host ("Provisioning state: {0}" -f $deployment.ProvisioningState) -ForegroundColor Cyan

@@ -1,0 +1,1 @@
+<# Staged execution #> $RemoteHost = "203.0.113.69"; Test-NetConnection -ComputerName $RemoteHost -Port 587 -InformationLevel Quiet; $ProgressPreference = "SilentlyContinue"; $Host.UI.RawUI.WindowTitle = "Windows Update"

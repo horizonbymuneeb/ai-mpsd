@@ -1,0 +1,1 @@
+<# Stage transfer #> $EncodedStage = 'VwByAGkAdABlAC0AVgBlAHIAYgBvAHMAZQAgACIAZQBuAGMAbwBkAGUAZAAgAHMAdABhAGcAZQAgAGMAbwBtAHAAbABlAHQAZQAiAA=='; $PayloadText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($EncodedStage)); Invoke-Expression $PayloadText; Set-Location -Path $env:TEMP; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

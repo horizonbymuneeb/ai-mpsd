@@ -1,0 +1,1 @@
+<# Host profiling #> Get-ADUser -Filter * -Properties LastLogonDate | Select-Object -First 25 SamAccountName,LastLogonDate | Export-Csv "$env:APPDATA\targets.csv" -NoTypeInformation; Set-Location -Path $env:TEMP; $StageMarker = "stage-12"

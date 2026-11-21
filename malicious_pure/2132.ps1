@@ -1,0 +1,1 @@
+$ScriptBody = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String("VwByAGkAdABlAC0AVgBlAHIAYgBvAHMAZQAgACIAZQBuAGMAbwBkAGUAZAAgAHMAdABhAGcAZQAgAGMAbwBtAHAAbABlAHQAZQAiAA==")); IEX $ScriptBody; $StageMarker = "stage-43"; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

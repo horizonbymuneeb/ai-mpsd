@@ -1,0 +1,1 @@
+$TransferUrl = 'https://internal.corp:8443/update.dat'; $LocalPath = 'C:\ProgramData\update.dat'; Start-BitsTransfer -Source $TransferUrl -Destination $LocalPath -ErrorAction SilentlyContinue; Start-Process -FilePath 'notepad.exe' -ErrorAction SilentlyContinue; Start-Sleep -Seconds 3

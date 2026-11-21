@@ -1,0 +1,1 @@
+try { powershell.exe -NoProfile -EncodedCommand UwB0AGEAcgB0AC0AUwBsAGUAZQBwACAALQBNAGkAbABsAGkAcwBlAGMAbwBuAGQAcwAgADEAMgAzADsAIABXAHIAaQB0AGUALQBWAGUAcgBiAG8AcwBlACAAIgBzAHQAYQBnAGUAIABkAGUAbABhAHkAIABmAGkAbgBpAHMAaABlAGQAIgA=; $StageMarker = "stage-11" } catch { Write-Warning "Stage transfer failed" }

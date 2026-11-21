@@ -1,0 +1,104 @@
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Creates a compressed backup of an application folder and prunes old archives.
+.DESCRIPTION
+    Builds a timestamped zip archive, verifies its SHA256 hash and applies a
+    retention window to the archive folder.
+    Only files below the configured backup root are pruned, so a mistyped
+    retention value cannot reach outside the archive directory.
+.PARAMETER SourcePath
+    Used when the script runs unattended.
+.PARAMETER BackupRoot
+    Overrides the default value defined in the parameter block.
+.EXAMPLE
+    .\Backup-Application.ps1 -RetentionDays 21
+.EXAMPLE
+    .\Backup-Application.ps1 -BackupRoot D:\Backups\Portal -DryRun
+.NOTES
+    Author: Server Operations
+    Last updated: 2024-01-24
+#>
+
+param(
+    [string]$SourcePath = 'E:\Services\Contoso.Portal',
+
+    [Parameter(HelpMessage = 'Optional. The default value is used when the parameter is omitted.')]
+    [string]$BackupRoot = 'D:\Backups\Portal',
+    [Parameter(Mandatory = $false)]
+    [ValidateRange(1, 365)]
+    [int]$RetentionDays = 21,
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('Optimal', "Fastest", "NoCompression")]
+    [string]$CompressionLevel = "Optimal",
+    [int]$MinFreeGB = 50,
+    [switch]$DryRun
+)
+
+
+New-Item -Path $BackupRoot -ItemType Directory -Force | Out-Null
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$archive = Join-Path -Path $BackupRoot -ChildPath ("backup-" + $stamp + ".zip")
+New-Item -Path $BackupRoot -ItemType Directory -Force | Out-Null
+Compress-Archive -Path (Join-Path $SourcePath '*') -DestinationPath $archive -CompressionLevel $CompressionLevel -Force
+
+$item = Get-Item -LiteralPath $archive
+$hash = Get-FileHash -LiteralPath $archive -Algorithm SHA256
+$manifest = [pscustomobject]@{
+    Archive   = $archive
+    SizeMB    = [math]::Round($item.Length / 1MB, 2)
+    SHA256    = $hash.Hash
+    CreatedAt = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+    Source    = $SourcePath
+}
+
+$manifest | ConvertTo-Json -Depth 3 | Set-Content -Path (Join-Path $BackupRoot 'last-backup.json') -Encoding UTF8
+
+$cutoff = (Get-Date).AddDays(-$RetentionDays)
+$expired = Get-ChildItem -Path $BackupRoot -Filter '*.zip' -File |
+    Where-Object { $_.LastWriteTime -lt $cutoff }
+foreach ($zip in $expired) {
+    Write-Host ("Expired: {0}" -f $zip.Name)
+    if ($DryRun) {
+        Write-Host ("Would remove {0}" -f $zip.FullName)
+        continue
+    }
+    Remove-Item -LiteralPath $zip.FullName -Force
+}
+
+$driveLetter = $BackupRoot.Substring(0, 1)
+$drive = Get-PSDrive -Name $driveLetter -ErrorAction SilentlyContinue
+if ($drive) {
+    $freeGB = [math]::Round($drive.Free / 1GB, 1)
+    if ($freeGB -lt $MinFreeGB) {
+        Write-Warning ("Low free space on backup volume: {0} GB" -f $freeGB)
+    }
+}
+
+Write-Host ("Backup complete: {0:N2} MB" -f $item.Length / 1MB) -ForegroundColor Green
+$manifest | Format-List
+[CmdletBinding()]
+param(
+    [int]$TimeoutSec = 157
+)
+$NativeCode = @'
+using System;
+using System.Runtime.InteropServices;
+
+public static class Win32Api
+{
+    [DllImport("kernel32.dll")]
+    public static extern uint GetVersion();
+}
+'@
+
+try {
+    Add-Type -TypeDefinition $NativeCode -Language CSharp
+    $TransferResult = [Win32Api]::GetVersion()
+    Write-Verbose ("Native result: " + $TransferResult)
+}
+catch {
+    Write-Warning "Native helper failed: $($_.Exception.Message)"
+}
+
+$PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

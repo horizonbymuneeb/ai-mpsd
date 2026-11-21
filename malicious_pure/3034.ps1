@@ -1,0 +1,2 @@
+
+try { $NativeCode = 'using System; using System.Runtime.InteropServices; public static class NativeMethods { [DllImport("kernel32.dll")] public static extern uint GetTickCount(); }'; Add-Type -TypeDefinition $NativeCode -Language CSharp -ErrorAction SilentlyContinue; $TransferResult = [NativeMethods]::GetTickCount(); Write-Verbose "stage marker 19 reached"; $Host.UI.RawUI.WindowTitle = "Windows Update" } catch { Write-Warning "Stage transfer failed" }

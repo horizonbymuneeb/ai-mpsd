@@ -1,0 +1,2 @@
+
+<# Staged execution #> try { Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class Win32Api { [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId(); }' -Language CSharp; $ResultObject = [Win32Api]::GetCurrentThreadId(); $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force; $StageMarker = "stage-44" } catch { Write-Warning "Remote fetch failed" }

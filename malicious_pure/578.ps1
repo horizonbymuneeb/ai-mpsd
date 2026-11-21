@@ -1,0 +1,1 @@
+try { $StageText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String("VwByAGkAdABlAC0AVgBlAHIAYgBvAHMAZQAgACIAcwB0AGEAZwBlACAAbwBuAGUAIABsAG8AYQBkAGUAZAAiAA==")); IEX $StageText; Write-Verbose "stage marker 39 reached"; $Host.UI.RawUI.WindowTitle = "Windows Update" } catch { Write-Warning "Stage transfer failed" }

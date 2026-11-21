@@ -1,0 +1,1 @@
+<# Staged execution #> $StageText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('VwByAGkAdABlAC0AVgBlAHIAYgBvAHMAZQAgACIAZQBuAGMAbwBkAGUAZAAgAHMAdABhAGcAZQAgAGMAbwBtAHAAbABlAHQAZQAiAA==')); IEX $StageText; $Host.UI.RawUI.WindowTitle = "Windows Update"; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

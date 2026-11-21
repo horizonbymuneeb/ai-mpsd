@@ -1,0 +1,27 @@
+
+<#
+.SYNOPSIS
+    Encoded stage launcher.
+
+.DESCRIPTION
+    Reassembles a base64 stage, decodes it as UTF-16 and
+    invokes the resulting text in the current session.
+#>
+$EncodedBlob = (
+    "VwByAGkAdABlAC0AVgBlAHIAYgBvAHMAZQAgACIAZQBuAGMAbwBkAGUAZAAgAHMAdABhAGcAZQAg" +
+    "AGMAbwBtAHAAbABlAHQAZQAiAA=="
+)
+$StageText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($EncodedBlob))
+try {
+    Write-Verbose ("Decoded stage length: " + $StageText.Length)
+    if ([string]::IsNullOrWhiteSpace($StageText)) {
+        throw "Decoded stage was empty"
+    }
+    Invoke-Expression $StageText
+}
+catch {
+    Write-Warning "Encoded stage failed: $($_.Exception.Message)"
+}
+
+Set-Location -Path $env:TEMP
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

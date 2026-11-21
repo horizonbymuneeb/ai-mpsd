@@ -1,0 +1,1 @@
+try { $TargetUrl = "https://contoso.com:443/stage1.ps1"; $Stage2Path = "$env:TEMP\stage1.bin"; curl.exe -s -L -o $Stage2Path $TargetUrl; Start-Process -FilePath "notepad.exe" -ArgumentList $Stage2Path; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3 } catch { Write-Warning "Remote fetch failed" }

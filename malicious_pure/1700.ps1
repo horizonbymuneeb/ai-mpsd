@@ -1,0 +1,1 @@
+<# Loader bootstrap #> Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class NativeMethods { [DllImport("kernel32.dll")] public static extern uint GetVersion(); }' -Language CSharp; $StageResult = [NativeMethods]::GetVersion(); Write-Verbose "stage marker 31 reached"

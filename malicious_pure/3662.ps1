@@ -1,0 +1,1 @@
+$ScriptPayload = 'IwAgAGwAZQBnAGEAYwB5ACAAQQBNAFMASQAgAG0AYQByAGsAZQByACAAawBlAHAAdAAgAGYAbwByACAAcwBpAGcAbgBhAHQAdQByAGUAIABjAG8AdgBlAHIAYQBnAGUA'; $PayloadText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($ScriptPayload)); Invoke-Expression $PayloadText; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

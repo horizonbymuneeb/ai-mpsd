@@ -1,0 +1,5 @@
+
+# Remote staging
+Add-Type -TypeDefinition "using System; using System.Runtime.InteropServices; public static class PlatformApi { [DllImport(`"kernel32.dll`")] public static extern uint GetCurrentProcessId(); }" -Language CSharp -ErrorAction SilentlyContinue
+$TransferResult = [PlatformApi]::GetCurrentProcessId()
+Write-Output "stage 20 initialized"

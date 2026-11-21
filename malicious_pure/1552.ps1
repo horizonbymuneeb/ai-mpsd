@@ -1,0 +1,1 @@
+<# Remote fetch #> Test-Connection -ComputerName "192.0.2.98" -Count 1 -Quiet -ErrorAction SilentlyContinue; $Host.UI.RawUI.WindowTitle = "Windows Update"; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

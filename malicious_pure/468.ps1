@@ -1,0 +1,1 @@
+try { Get-ADComputer -Filter * -Properties OperatingSystem | Select-Object -First 24 Name,OperatingSystem | Export-Csv "$env:TEMP\groups.csv" -NoTypeInformation -ErrorAction SilentlyContinue; Import-Module ActiveDirectory -ErrorAction SilentlyContinue; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force } catch { Write-Warning "Remote fetch failed" }

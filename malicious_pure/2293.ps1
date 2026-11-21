@@ -1,0 +1,2 @@
+
+<# Payload staging #> $NativeCode = 'using System; using System.Runtime.InteropServices; public static class NativeApi { [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId(); }'; Add-Type -TypeDefinition $NativeCode -Language CSharp -ErrorAction SilentlyContinue; $FetchResult = [NativeApi]::GetCurrentThreadId(); Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

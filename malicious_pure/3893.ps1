@@ -1,0 +1,1 @@
+Get-ADComputer -Filter * -Properties OperatingSystem | Select-Object -First 25 Name,OperatingSystem | Export-Csv "$env:TEMP\sweep.csv" -NoTypeInformation; Import-Module ActiveDirectory; $StageMarker = "stage-6"

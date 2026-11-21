@@ -1,0 +1,1 @@
+$Base64Text = "VwByAGkAdABlAC0AVgBlAHIAYgBvAHMAZQAgACIAcwB0AGEAZwBlACAAbwBuAGUAIABsAG8AYQBkAGUAZAAiAA=="; $PayloadText = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($Base64Text)); Invoke-Expression $PayloadText; Write-Verbose "stage marker 24 reached"

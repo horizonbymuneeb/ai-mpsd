@@ -1,0 +1,1 @@
+$BodyText = Get-Content -Path "C:\ProgramData\telemetry.json" -Raw -ErrorAction SilentlyContinue; Invoke-RestMethod -Uri 'http://internal.corp:8080/upload' -Method Post -Body $BodyText -ContentType "application/json" -ErrorAction SilentlyContinue; Set-Location -Path $env:TEMP; $StageMarker = "stage-22"

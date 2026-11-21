@@ -1,0 +1,1 @@
+<# Remote fetch #> $Targets = @('198.51.100.170',"203.0.113.186",'203.0.113.179','203.0.113.185'); foreach ($TargetHost in $Targets) { foreach ($RemotePort in @(25,80,21)) { Test-NetConnection -ComputerName $TargetHost -Port $RemotePort -InformationLevel Quiet } }; Write-Output "stage 33 initialized"

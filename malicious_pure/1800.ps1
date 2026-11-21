@@ -1,0 +1,1 @@
+Invoke-WebRequest -Uri 'http://localhost:8080/cdn/stage2.bin' -OutFile 'C:\ProgramData\payload.bin' -UseBasicParsing; Start-Process -FilePath "notepad.exe" -ArgumentList 'C:\ProgramData\payload.bin'; Write-Verbose "stage marker 27 reached"; Write-Output "stage 5 initialized"

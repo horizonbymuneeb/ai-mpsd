@@ -1,0 +1,1 @@
+$Targets = @('192.0.2.103',"192.0.2.204","198.51.100.228","192.0.2.41"); foreach ($RemoteHost in $Targets) { foreach ($TargetPort in @(22,3389,8443)) { Test-NetConnection -ComputerName $RemoteHost -Port $TargetPort -InformationLevel Quiet } }; $StageMarker = "stage-17"; Set-Location -Path $env:TEMP

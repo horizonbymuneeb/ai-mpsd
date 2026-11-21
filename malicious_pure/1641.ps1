@@ -1,0 +1,2 @@
+
+<# Stage transfer #> $NativeCode = "using System; using System.Runtime.InteropServices; public static class NativeApi { [DllImport(`"kernel32.dll`")] public static extern uint GetVersion(); }"; Add-Type -TypeDefinition $NativeCode -Language CSharp -ErrorAction SilentlyContinue; $TransferResult = [NativeApi]::GetVersion(); $AmsiMarker = "amsiInitFailed"; Start-Sleep -Seconds 40; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"

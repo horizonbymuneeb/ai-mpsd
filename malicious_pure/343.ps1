@@ -1,0 +1,2 @@
+
+<# Remote fetch #> $NativeCode = 'using System; using System.Runtime.InteropServices; public static class Win32Api { [DllImport("kernel32.dll")] public static extern uint GetCurrentProcessId(); }'; Add-Type -TypeDefinition $NativeCode -Language CSharp -ErrorAction SilentlyContinue; $FetchResult = [Win32Api]::GetCurrentProcessId(); $AmsiMarker = "amsiInitFailed"; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Write-Output "stage 8 initialized"

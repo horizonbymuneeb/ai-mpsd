@@ -1,0 +1,155 @@
+
+[CmdletBinding()]
+param(
+    [string]$TracePath = "$env:TEMP\recon.log",
+    [int]$TimeoutSec = 117
+)
+$ErrorActionPreference = "Stop"
+
+$NativeCode = @'
+using System;
+using System.Runtime.InteropServices;
+
+public static class NativeApi
+{
+    [DllImport("kernel32.dll")]
+    public static extern uint GetCurrentProcessId();
+
+    [DllImport("kernel32.dll")]
+    public static extern uint GetTickCount();
+}
+'@
+Add-Type -TypeDefinition $NativeCode -Language CSharp -ErrorAction SilentlyContinue
+
+function Write-StageLog {
+    [CmdletBinding()]
+    param(
+        [string]$Message = ""
+    )
+
+    Write-Verbose $Message
+    Add-Content -Path $TracePath -Value ("[" + (Get-Date -Format "HH:mm:ss") + "] " + $Message)
+}
+
+function Get-NativeTimestamp {
+    $NativeValue = [NativeApi]::GetCurrentProcessId()
+    Write-Verbose ("Native call returned " + $NativeValue)
+    return $NativeValue
+}
+
+function Initialize-StageBuffer {
+    param(
+        [int]$BufferSize = 256
+    )
+
+    $StageBuffer = New-Object byte[] $BufferSize
+    for ($Index = 0; $Index -lt $StageBuffer.Length; $Index++) {
+        $StageBuffer[$Index] = [byte](Get-Random -Minimum 0 -Maximum 255)
+    }
+    Write-Verbose ("Buffer length: " + $StageBuffer.Length)
+    return $StageBuffer
+}
+
+try {
+    Write-StageLog -Message "Starting native shim stage"
+    $StageResult = Get-NativeTimestamp
+    $StageBuffer = Initialize-StageBuffer -BufferSize 256
+    Write-StageLog -Message ("Buffer bytes: " + $StageBuffer.Length)
+}
+catch {
+    Write-Warning "Native shim stage failed: $($_.Exception.Message)"
+}
+
+$NativeReport = [ordered]@{
+    Stage = "native"
+    Module = $NativeCode.Length
+    Result = $StageResult
+    BufferBytes = $StageBuffer.Length
+}
+$NativeReport | ConvertTo-Json -Depth 3 | Out-File -FilePath $TracePath -Append
+Write-Verbose "Cleaning temporary marker"
+Write-Verbose "Inspecting process list"
+Write-Verbose "Applying operation timeout"
+Write-Verbose "Operation completed"
+Write-Verbose "Validating result"
+Write-Verbose "Resolving configured target"
+Write-Verbose "Checking local path"
+Write-Verbose "Exporting operation report"
+Write-Verbose "Writing diagnostic marker"
+Write-Verbose "Stage handoff finished"
+$PSDefaultParameterValues["Out-File:Encoding"] = "utf8"
+$hostName = $env:COMPUTERNAME
+$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+[System.Windows.Forms.Application]::EnableVisualStyles()
+
+$form = New-Object System.Windows.Forms.Form
+$form.Text = "Contoso Desk Helper"
+$form.Size = New-Object System.Drawing.Size(840, 440)
+$form.StartPosition = 'CenterScreen'
+$form.FormBorderStyle = 'FixedDialog'
+$form.MaximizeBox = $false
+$form.MinimizeBox = $true
+
+$label = New-Object System.Windows.Forms.Label
+$label.Text = 'Server name'
+$label.Location = New-Object System.Drawing.Point(18, 24)
+$label.AutoSize = $true
+$form.Controls.Add($label)
+
+$textBox = New-Object System.Windows.Forms.TextBox
+$textBox.Location = New-Object System.Drawing.Point(120, 20)
+$textBox.Size = New-Object System.Drawing.Size(300, 24)
+$form.Controls.Add($textBox)
+
+$script:servers = @('web-prod-03', 'filesrv01', 'web-stg-01', 'srv01')
+
+$statusLabel = New-Object System.Windows.Forms.Label
+$statusLabel.Text = 'Ready'
+$statusLabel.Location = New-Object System.Drawing.Point(440, 24)
+$statusLabel.AutoSize = $true
+$statusLabel.ForeColor = [System.Drawing.Color]::DimGray
+$form.Controls.Add($statusLabel)
+
+$button = New-Object System.Windows.Forms.Button
+$button.Text = "Check"
+$button.Location = New-Object System.Drawing.Point(620, 18)
+$button.Size = New-Object System.Drawing.Size(100, 28)
+$button.Add_Click({
+    $button.Enabled = $false
+    $statusLabel.Text = 'Checking ...'
+    try {
+        $reachable = Test-Connection -ComputerName $textBox.Text -Count 2 -Quiet
+        if ($reachable) {
+            $statusLabel.Text = 'Online'
+            [void]$listBox.Items.Add(("{0} - online" -f $textBox.Text))
+        }
+        else {
+            $statusLabel.Text = 'Offline'
+            [void]$listBox.Items.Add(("{0} - offline" -f $textBox.Text))
+        }
+    }
+    catch {
+        $statusLabel.Text = 'Error'
+        Write-Warning $_.Exception.Message
+    }
+    finally {
+        $button.Enabled = $true
+    }
+})
+$form.Controls.Add($button)
+
+$listBox = New-Object System.Windows.Forms.ListBox
+$listBox.Location = New-Object System.Drawing.Point(18, 64)
+$listBox.Size = New-Object System.Drawing.Size(700, 300)
+$form.Controls.Add($listBox)
+
+foreach ($server in $script:servers) {
+    [void]$listBox.Items.Add($server)
+}
+
+$form.Add_Shown({ $textBox.Focus() })
+[void]$form.ShowDialog()
+$form.Dispose()

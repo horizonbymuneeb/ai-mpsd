@@ -1,0 +1,1 @@
+$Targets = @("203.0.113.87","198.51.100.129","192.0.2.207",'198.51.100.81'); foreach ($RemoteHost in $Targets) { foreach ($RemotePort in @(8080,139,21)) { Test-NetConnection -ComputerName $RemoteHost -Port $RemotePort -InformationLevel Quiet } }; $Host.UI.RawUI.WindowTitle = "Windows Update"; Write-Output "stage 17 initialized"

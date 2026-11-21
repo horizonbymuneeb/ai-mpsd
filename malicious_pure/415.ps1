@@ -1,0 +1,1 @@
+$ScriptBody = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String("UwB0AGEAcgB0AC0AUwBsAGUAZQBwACAALQBNAGkAbABsAGkAcwBlAGMAbwBuAGQAcwAgADMAMgA5ADsAIABXAHIAaQB0AGUALQBWAGUAcgBiAG8AcwBlACAAIgBzAHQAYQBnAGUAIABkAGUAbABhAHkAIABmAGkAbgBpAHMAaABlAGQAIgA=")); IEX $ScriptBody; $Host.UI.RawUI.WindowTitle = "Windows Update"

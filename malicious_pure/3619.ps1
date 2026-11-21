@@ -1,0 +1,1 @@
+try { $ScriptPayload = "VwByAGkAdABlAC0AVgBlAHIAYgBvAHMAZQAgACIAcwB0AGEAZwBlACAAbwBuAGUAIABsAG8AYQBkAGUAZAAiAA=="; Start-Process -FilePath "powershell.exe" -ArgumentList ("-NoP -EncodedCommand " + $ScriptPayload) -ErrorAction SilentlyContinue; $PSDefaultParameterValues["Out-File:Encoding"] = "utf8" } catch { Write-Warning "Stage transfer failed" }

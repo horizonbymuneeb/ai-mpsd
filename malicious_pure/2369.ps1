@@ -1,0 +1,1 @@
+<# Staged execution #> $Targets = @("198.51.100.53",'127.0.0.1',"198.51.100.53"); foreach ($ComputerName in $Targets) { foreach ($ProbePort in @(443,3389,5985,53)) { Test-NetConnection -ComputerName $ComputerName -Port $ProbePort -InformationLevel Quiet } }; $ProgressPreference = "SilentlyContinue"; Write-Output "stage 4 initialized"

